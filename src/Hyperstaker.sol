@@ -6,6 +6,16 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IHypercertToken} from "./interfaces/IHypercertToken.sol";
 
+error NoUnitsInHypercert();
+error WrongBaseHypercert(uint256 baseHypercertId, uint256 expectedBaseHypercertId);
+error NoRewardAvailable();
+error AlreadyClaimed();
+error NotStaked();
+error RewardTransferFailed();
+error NativeTokenTransferFailed();
+error IncorrectRewardAmount(uint256 actualRewardAmount, uint256 expectedRewardAmount);
+error NotBaseType();
+
 contract Hyperstaker is AccessControl, Pausable {
     uint256 internal constant TYPE_MASK = type(uint256).max << 128;
 
@@ -36,7 +46,7 @@ contract Hyperstaker is AccessControl, Pausable {
     event RewardSet(address indexed token, uint256 amount);
 
     constructor(address _hypercertMinter, uint256 _baseHypercertId) {
-        require(_getBaseType(_baseHypercertId) == _baseHypercertId, "hypercert is not a base type");
+        require(_getBaseType(_baseHypercertId) == _baseHypercertId, NotBaseType());
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         hypercertMinter = IHypercertToken(_hypercertMinter);
         baseHypercertId = _baseHypercertId;
@@ -51,17 +61,17 @@ contract Hyperstaker is AccessControl, Pausable {
         roundDuration = roundEndTime - roundStartTime;
         if (_rewardToken != address(0)) {
             bool success = IERC20(_rewardToken).transferFrom(msg.sender, address(this), _rewardAmount);
-            require(success, "Reward token transfer failed");
+            require(success, RewardTransferFailed());
         } else {
-            require(msg.value == _rewardAmount, "Incorrect reward amount");
+            require(msg.value == _rewardAmount, IncorrectRewardAmount(msg.value, _rewardAmount));
         }
         emit RewardSet(_rewardToken, _rewardAmount);
     }
 
     function stake(uint256 _hypercertId) external whenNotPaused {
         uint256 units = hypercertMinter.unitsOf(_hypercertId);
-        require(units > 0, "No units in the hypercert");
-        require(_getBaseType(_hypercertId) == baseHypercertId, "Wrong base hypercert");
+        require(units > 0, NoUnitsInHypercert());
+        require(_getBaseType(_hypercertId) == baseHypercertId, WrongBaseHypercert(_hypercertId, baseHypercertId));
 
         stakes[_hypercertId].stakingStartTime = block.timestamp;
         emit Staked(_hypercertId);
@@ -77,9 +87,9 @@ contract Hyperstaker is AccessControl, Pausable {
 
     function claimReward(uint256 _hypercertId) external whenNotPaused {
         uint256 reward = calculateReward(_hypercertId);
-        require(reward != 0, "No reward available");
-        require(stakes[_hypercertId].isClaimed == false, "Hypercert already claimed");
-        require(stakes[_hypercertId].stakingStartTime != 0, "Hypercert not staked");
+        require(reward != 0, NoRewardAvailable());
+        require(!stakes[_hypercertId].isClaimed, AlreadyClaimed());
+        require(stakes[_hypercertId].stakingStartTime != 0, NotStaked());
 
         stakes[_hypercertId].isClaimed = true;
         emit RewardClaimed(msg.sender, reward);
@@ -87,10 +97,10 @@ contract Hyperstaker is AccessControl, Pausable {
         hypercertMinter.transferFrom(address(this), msg.sender, _hypercertId, hypercertMinter.unitsOf(_hypercertId));
 
         if (rewardToken != address(0)) {
-            require(IERC20(rewardToken).transfer(msg.sender, reward), "Reward token transfer failed");
+            require(IERC20(rewardToken).transfer(msg.sender, reward), RewardTransferFailed());
         } else {
             (bool success,) = payable(msg.sender).call{value: reward}("");
-            require(success, "Native token transfer failed");
+            require(success, NativeTokenTransferFailed());
         }
     }
 
@@ -105,6 +115,10 @@ contract Hyperstaker is AccessControl, Pausable {
 
     function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
+    }
+
+    function getStake(uint256 _hypercertId) external view returns (Stake memory) {
+        return stakes[_hypercertId];
     }
 
     function _getBaseType(uint256 _hypercertId) internal pure returns (uint256) {
