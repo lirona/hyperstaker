@@ -14,11 +14,7 @@ contract MockHypercertMinter is IHypercertToken {
         unitss[tokenID] = _units;
     }
 
-    function splitFraction(
-        address to,
-        uint256 tokenID,
-        uint256[] memory values
-    ) external {
+    function splitFraction(address to, uint256 tokenID, uint256[] memory values) external {
         unitss[tokenID] = values[0];
         unitss[tokenID + 1] = values[1];
     }
@@ -27,16 +23,9 @@ contract MockHypercertMinter is IHypercertToken {
         return unitss[tokenID];
     }
 
-    function ownerOf(
-        uint256 tokenID
-    ) external view returns (address owner) {
+    function ownerOf(uint256 tokenID) external view returns (address owner) {
         return address(this);
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 units
-    ) external {}
+    function transferFrom(address from, address to, uint256 tokenId, uint256 units) external {}
 }

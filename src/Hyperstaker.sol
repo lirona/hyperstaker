@@ -7,7 +7,6 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IHypercertToken} from "./interfaces/IHypercertToken.sol";
 
 contract Hyperstaker is AccessControl, Pausable {
-
     uint256 internal constant TYPE_MASK = type(uint256).max << 128;
 
     IHypercertToken public hypercertMinter;

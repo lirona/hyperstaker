@@ -8,7 +8,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IHypercertToken} from "./interfaces/IHypercertToken.sol";
 
 contract Hyperfund is AccessControl, Pausable {
-
     IHypercertToken public hypercertMinter;
     uint256 public hypercertId;
 
@@ -55,7 +54,7 @@ contract Hyperfund is AccessControl, Pausable {
     /// @notice send a donation to the hyperfund and receive a hypercert fraction
     /// @param _token address of the token to donate, must be allowlisted. address(0) for native token
     /// @param _amount amount of the token to donate
-    function donate(address _token, uint256 _amount) external payable whenNotPaused(){
+    function donate(address _token, uint256 _amount) external payable whenNotPaused {
         require(allowedTokens[_token], "token not allowlisted");
         require(_amount != 0, "invalid amount");
         require(hypercertMinter.unitsOf(hypercertId) >= _amount, "amount accedes available supply");
