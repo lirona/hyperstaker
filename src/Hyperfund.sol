@@ -28,18 +28,18 @@ contract Hyperfund is AccessControl, Pausable {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         hypercertId = _hypercertId;
         hypercertMinter = IHypercertToken(_hypercertMinter);
-    } 
+    }
 
     // Allocate funds to builders
     function allocateFunds(address _builder, uint256 _hypercertId, uint256 _amount) external onlyRole(MANAGER_ROLE) {
-      allocations[_builder][_hypercertId] = _amount;
+        allocations[_builder][_hypercertId] = _amount;
     }
 
     function retireHypercert(address _token, uint256 _amount, uint256 _id) external {
-      require(hypercertMinter.unitsOf(msg.sender, _id) >= _amount);
-      require(allocations[msg.sender][_id] >= _amount, "insufficient allocation");
+        require(hypercertMinter.unitsOf(msg.sender, _id) >= _amount);
+        require(allocations[msg.sender][_id] >= _amount, "insufficient allocation");
 
-      _retireFraction(_token, _amount, _id);
+        _retireFraction(_token, _amount, _id);
     }
 
     function setHypercertId(uint256 _hypercertId) external onlyRole(MANAGER_ROLE) {
@@ -76,9 +76,9 @@ contract Hyperfund is AccessControl, Pausable {
     }
 
     function _retireFraction(address _token, uint256 _amount, uint256 _id) internal {
-      allocations[msg.sender][_id] -= _amount;
-      hypercertMinter.burn(msg.sender, _id, _amount);
-      require(IERC20(_token).transfer(msg.sender, _amount), "retirement failed due to transfer failure");
+        allocations[msg.sender][_id] -= _amount;
+        hypercertMinter.burn(msg.sender, _id, _amount);
+        require(IERC20(_token).transfer(msg.sender, _amount), "retirement failed due to transfer failure");
     }
 
     function _mintFraction(address account, uint256 amount) internal {

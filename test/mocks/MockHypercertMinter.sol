@@ -16,7 +16,7 @@ contract MockHypercertMinter is IHypercertToken {
     }
 
     function splitFraction(address to, uint256 tokenID, uint256[] memory values) external {
-      console.log(msg.sender);
+        console.log(msg.sender);
         unitss[tokenID][msg.sender] = values[0];
         unitss[tokenID + 1][to] = values[1];
     }
@@ -36,8 +36,8 @@ contract MockHypercertMinter is IHypercertToken {
     function transferFrom(address from, address to, uint256 tokenId, uint256 units) external {}
 
     function burn(address account, uint256 id, uint256 amount) external {
-      require(unitss[id][account] > 0);
-      unitss[id][address(0)] += unitss[id][account];
-      unitss[id][account] = 0;
+        require(unitss[id][account] > 0);
+        unitss[id][address(0)] += unitss[id][account];
+        unitss[id][account] = 0;
     }
 }
