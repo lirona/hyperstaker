@@ -24,6 +24,10 @@ contract Hyperfund is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    event Retired(uint256 indexed hypercertId, address indexed builder, address token, uint256 amount);
+    event Allocate(uint256 hypercertId, address indexed builder, uint256 amount);
+    event Withdraw(address indexed token, uint256 indexed amount, address indexed to);
+
     constructor(address _hypercertMinter, uint256 _hypercertId) {
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         hypercertId = _hypercertId;
@@ -33,6 +37,8 @@ contract Hyperfund is AccessControl, Pausable {
     // Allocate funds to builders
     function allocateFunds(address _builder, uint256 _hypercertId, uint256 _amount) external onlyRole(MANAGER_ROLE) {
         allocations[_builder][_hypercertId] = _amount;
+
+        emit Allocate(_hypercertId, _builder, _amount);
     }
 
     function retireHypercert(address _token, uint256 _amount, uint256 _id) external {
@@ -40,6 +46,7 @@ contract Hyperfund is AccessControl, Pausable {
         require(allocations[msg.sender][_id] >= _amount, "insufficient allocation");
 
         _retireFraction(_token, _amount, _id);
+        emit Retired(_id, msg.sender, _token, _amount);
     }
 
     function setHypercertId(uint256 _hypercertId) external onlyRole(MANAGER_ROLE) {
@@ -56,6 +63,8 @@ contract Hyperfund is AccessControl, Pausable {
         } else {
             require(IERC20(_token).transfer(_to, _amount), "transfer failed");
         }
+
+        emit Withdraw(_token, _amount, _to);
     }
 
     /// @notice send a donation to the hyperfund and receive a hypercert fraction (will be deprecated after integrating Doogly)
