@@ -9,8 +9,8 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 contract HyperstakerTest is Test {
     Hyperstaker public hyperstaker;
     MockHypercertMinter public hypercertMinter;
-    uint256 public baseHypercertId = 1<<128;
-    uint256 public fractionHypercertId = (1<<128) + 1;
+    uint256 public baseHypercertId = 1 << 128;
+    uint256 public fractionHypercertId = (1 << 128) + 1;
 
     function setUp() public {
         hypercertMinter = new MockHypercertMinter();
@@ -18,12 +18,12 @@ contract HyperstakerTest is Test {
         hypercertMinter.setUnits(fractionHypercertId, 100);
     }
 
-    function test_Staking() public {
+    function test_Staking() public {      
         hyperstaker.stake(fractionHypercertId);
         assertEq(hyperstaker.getStake(fractionHypercertId).stakingStartTime, block.timestamp);
     }
 
-    function test_Unstaking() public {
+    function test_Unstaking() public {    
         hyperstaker.stake(fractionHypercertId);
         hyperstaker.unstake(fractionHypercertId);
         assertEq(hyperstaker.getStake(fractionHypercertId).stakingStartTime, 0);
