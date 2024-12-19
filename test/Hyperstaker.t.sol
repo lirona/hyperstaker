@@ -18,12 +18,12 @@ contract HyperstakerTest is Test {
         hypercertMinter.setUnits(fractionHypercertId, 100);
     }
 
-    function test_Staking() public {      
+    function test_Staking() public {
         hyperstaker.stake(fractionHypercertId);
         assertEq(hyperstaker.getStake(fractionHypercertId).stakingStartTime, block.timestamp);
     }
 
-    function test_Unstaking() public {    
+    function test_Unstaking() public {
         hyperstaker.stake(fractionHypercertId);
         hyperstaker.unstake(fractionHypercertId);
         assertEq(hyperstaker.getStake(fractionHypercertId).stakingStartTime, 0);

@@ -18,7 +18,7 @@ contract HyperfundTest is Test {
         hypercertMinter = new MockHypercertMinter();
     }
 
-    function testAllocateAndRetire() public {
+    function testE2EFlow() public {
         address admin = vm.addr(1);
         address manager = vm.addr(2);
         address builder = vm.addr(3);
