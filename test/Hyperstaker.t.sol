@@ -15,16 +15,15 @@ contract HyperstakerTest is Test {
     function setUp() public {
         hypercertMinter = new MockHypercertMinter();
         hyperstaker = new Hyperstaker(address(hypercertMinter), baseHypercertId);
+        hypercertMinter.setUnits(fractionHypercertId, 100);
     }
 
-    function test_Staking() public {
-        hypercertMinter.setUnits(fractionHypercertId, 100);
+    function test_Staking() public {      
         hyperstaker.stake(fractionHypercertId);
         assertEq(hyperstaker.getStake(fractionHypercertId).stakingStartTime, block.timestamp);
     }
 
-    function test_Unstaking() public {
-        hypercertMinter.setUnits(fractionHypercertId, 100);
+    function test_Unstaking() public {    
         hyperstaker.stake(fractionHypercertId);
         hyperstaker.unstake(fractionHypercertId);
         assertEq(hyperstaker.getStake(fractionHypercertId).stakingStartTime, 0);

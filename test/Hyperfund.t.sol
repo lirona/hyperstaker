@@ -37,8 +37,6 @@ contract HyperfundTest is Test {
 
         hypercertMinter.setUnits(fractionHypercertId, 1000);
 
-        hypercertMinter.unitsOf(manager, fractionHypercertId);
-
         hyperfund.setAllowedToken(address(usdc), true);
 
         uint256 builderHypercertFraction = fractionHypercertId + 1;
