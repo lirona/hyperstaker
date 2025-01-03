@@ -45,9 +45,10 @@ contract Hyperstaker is AccessControl, Pausable {
     event RewardClaimed(address indexed user, uint256 reward);
     event RewardSet(address indexed token, uint256 amount);
 
-    constructor(address _hypercertMinter, uint256 _baseHypercertId) {
+    constructor(address _hypercertMinter, uint256 _baseHypercertId, address manager) {
         require(_getBaseType(_baseHypercertId) == _baseHypercertId, NotBaseType());
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _grantRole(MANAGER_ROLE, manager);
         hypercertMinter = IHypercertToken(_hypercertMinter);
         baseHypercertId = _baseHypercertId;
         totalUnits = hypercertMinter.unitsOf(baseHypercertId);
