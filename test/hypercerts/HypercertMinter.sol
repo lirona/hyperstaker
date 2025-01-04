@@ -4,7 +4,7 @@ pragma solidity 0.8.16;
 import {IHypercertToken} from "./IHypercertToken.sol";
 import {SemiFungible1155} from "./SemiFungible1155.sol";
 import {AllowlistMinter} from "./AllowlistMinter.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts/security/PausableUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 import {Errors} from "./Errors.sol";
 

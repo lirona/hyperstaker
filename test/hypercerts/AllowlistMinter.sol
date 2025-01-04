@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import {MerkleProofUpgradeable} from "oz-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IAllowlist} from "./IAllowlist.sol";
 
 import {Errors} from "./Errors.sol";
@@ -25,7 +25,7 @@ contract AllowlistMinter is IAllowlist {
         returns (bool isAllowed)
     {
         if (merkleRoots[claimID].length == 0) revert Errors.DoesNotExist();
-        isAllowed = MerkleProofUpgradeable.verifyCalldata(proof, merkleRoots[claimID], leaf);
+        isAllowed = MerkleProof.verifyCalldata(proof, merkleRoots[claimID], leaf);
     }
 
     function _createAllowlist(uint256 claimID, bytes32 merkleRoot, uint256 units) internal {
@@ -44,7 +44,7 @@ contract AllowlistMinter is IAllowlist {
 
         if (hasBeenClaimed[claimID][leaf]) revert Errors.AlreadyClaimed();
         if (
-            !MerkleProofUpgradeable.verifyCalldata(proof, merkleRoots[claimID], leaf)
+            !MerkleProof.verifyCalldata(proof, merkleRoots[claimID], leaf)
                 || (minted[claimID] + amount) > maxUnits[claimID]
         ) revert Errors.Invalid();
         hasBeenClaimed[claimID][leaf] = true;
