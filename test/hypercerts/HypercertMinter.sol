@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.16;
+pragma solidity 0.8.28;
 
 import {IHypercertToken} from "./IHypercertToken.sol";
 import {SemiFungible1155} from "./SemiFungible1155.sol";
@@ -188,8 +188,8 @@ contract HypercertMinter is IHypercertToken, SemiFungible1155, AllowlistMinter, 
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal virtual override {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    ) internal virtual {
+        //   super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
 
         // By-pass transfer restrictions for minting and burning
         if (from == address(0)) {

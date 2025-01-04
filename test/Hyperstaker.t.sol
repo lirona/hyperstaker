@@ -8,16 +8,14 @@ import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
 
 contract HyperstakerTest is Test {
     Hyperstaker public hyperstaker;
-    MockHypercertMinter public hypercertMinter;
+    HypercertMinter public hypercertMinter;
     uint256 public baseHypercertId = 1 << 128;
     uint256 public fractionHypercertId = (1 << 128) + 1;
     MockERC20 public rewardToken = new MockERC20("Reward", "REW");
 
     function setUp() public {
-        hypercertMinter = new MockHypercertMinter();
+        hypercertMinter = new HypercertMinter();
         hyperstaker = new Hyperstaker(address(hypercertMinter), baseHypercertId, address(this));
-        hypercertMinter.setUnits(baseHypercertId, 100);
-        hypercertMinter.setUnits(fractionHypercertId, 100);
     }
 
     function test_Constructor() public {

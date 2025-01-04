@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Used components of Enjin example implementation for mixed fungibility
 // https://github.com/enjin/erc-1155/blob/master/contracts/ERC1155MixedFungibleMintable.sol
-pragma solidity 0.8.16;
+pragma solidity 0.8.28;
 
-import {ERC1155Upgradeable} from "oz-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import {ERC1155BurnableUpgradeable} from "oz-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
-import {ERC1155URIStorageUpgradeable} from "oz-upgradeable/token/ERC1155/extensions/ERC1155URIStorageUpgradeable.sol";
-import {OwnableUpgradeable} from "oz-upgradeable/access/OwnableUpgradeable.sol";
-import {Initializable} from "oz-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "oz-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {Errors} from "./libs/Errors.sol";
+import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {ERC1155BurnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
+import {ERC1155URIStorageUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155URIStorageUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Errors} from "./Errors.sol";
 
 /// @title Contract for minting semi-fungible EIP1155 tokens
 /// @author bitbeckers
@@ -58,7 +60,7 @@ contract SemiFungible1155 is
         __ERC1155_init("");
         __ERC1155Burnable_init();
         __ERC1155URIStorage_init();
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
     }
 
@@ -76,7 +78,7 @@ contract SemiFungible1155 is
     /// @dev Identify that token at `_id` is base type.
     /// @dev Upper 128 bits identify base type ID, lower bits should be 0
     function isBaseType(uint256 tokenID) internal pure returns (bool) {
-        return (tokenID & NF_INDEX_MASK == 0);
+        return (tokenID & TYPE_MASK == tokenID) && (tokenID & NF_INDEX_MASK == 0);
     }
 
     /// @dev Identify that token at `_id` is fraction of a claim.
@@ -235,7 +237,7 @@ contract SemiFungible1155 is
             }
         }
 
-        _beforeUnitTransfer(_msgSender(), owners(_tokenID), fromIDs, toIDs, values, "");
+        _beforeUnitTransfer(_msgSender(), owners[_tokenID], fromIDs, toIDs, values, "");
 
         for (uint256 i; i < len;) {
             valueLeft -= values[i];
@@ -265,7 +267,7 @@ contract SemiFungible1155 is
 
         uint256 target = _fractionIDs[len];
 
-        if (_to == address(0) || owners[target] != _account) revert Errors.NotAllowed();
+        if (_account == address(0) || owners[target] != _account) revert Errors.NotAllowed();
 
         uint256 _totalValue;
         uint256[] memory fromIDs = new uint256[](len);
@@ -331,8 +333,8 @@ contract SemiFungible1155 is
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal virtual override {
-        super._afterTokenTransfer(operator, from, to, ids, amounts, data);
+    ) internal virtual {
+        //  super._afterTokenTransfer(operator, from, to, ids, amounts, data);
 
         uint256 len = ids.length;
 
