@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 # Run forge fmt
-forge fmt
+forge fmt -- --write

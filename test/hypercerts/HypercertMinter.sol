@@ -41,10 +41,11 @@ contract HypercertMinter is IHypercertToken, SemiFungible1155, AllowlistMinter, 
         external
         override
         whenNotPaused
+        returns (uint256 claimID)
     {
         // This enables us to release this restriction in the future
         if (msg.sender != account) revert Errors.NotAllowed();
-        uint256 claimID = _mintNewTypeWithToken(account, units, _uri);
+        claimID = _mintNewTypeWithToken(account, units, _uri);
         typeRestrictions[claimID] = restrictions;
         emit ClaimStored(claimID, _uri, units);
     }
@@ -57,13 +58,13 @@ contract HypercertMinter is IHypercertToken, SemiFungible1155, AllowlistMinter, 
         uint256[] calldata fractions,
         string memory _uri,
         TransferRestrictions restrictions
-    ) external override whenNotPaused {
+    ) external override whenNotPaused returns (uint256 claimID) {
         // This enables us to release this restriction in the future
         if (msg.sender != account) revert Errors.NotAllowed();
         //Using sum to compare units and fractions (sanity check)
         if (_getSum(fractions) != units) revert Errors.Invalid();
 
-        uint256 claimID = _mintNewTypeWithTokens(account, fractions, _uri);
+        claimID = _mintNewTypeWithTokens(account, fractions, _uri);
         typeRestrictions[claimID] = restrictions;
         emit ClaimStored(claimID, _uri, units);
     }
@@ -130,6 +131,28 @@ contract HypercertMinter is IHypercertToken, SemiFungible1155, AllowlistMinter, 
     /// @dev see {IHypercertToken}
     function burnFraction(address _account, uint256 _tokenID) external whenNotPaused {
         _burnToken(_account, _tokenID);
+    }
+
+    /// @notice Burn a claimtoken
+    /// @dev see {IHypercertToken}
+    function batchBurnFraction(address _account, uint256[] memory _tokenIDs) external whenNotPaused {
+        _batchBurnToken(_account, _tokenIDs);
+    }
+
+    /// @notice Burn a claimtoken; override is needed to update units/values
+    /// @dev see {ERC1155Burnable}
+    function burn(address account, uint256 id, uint256 /*value*/ ) public override whenNotPaused {
+        _burnToken(account, id);
+    }
+
+    /// @notice Batch burn claimtokens; override is needed to update units/values
+    /// @dev see {ERC1155Burnable}
+    function burnBatch(address account, uint256[] memory ids, uint256[] memory /*values*/ )
+        public
+        override
+        whenNotPaused
+    {
+        _batchBurnToken(account, ids);
     }
 
     /// @dev see {IHypercertToken}
@@ -214,6 +237,13 @@ contract HypercertMinter is IHypercertToken, SemiFungible1155, AllowlistMinter, 
                 ++i;
             }
         }
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IHypercertToken).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**

@@ -21,8 +21,9 @@ contract Hyperfund is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor(address _hypercertMinter, uint256 _hypercertId) {
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    constructor(address _hypercertMinter, uint256 _hypercertId, address _manager) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, _manager);
         hypercertId = _hypercertId;
         hypercertMinter = IHypercertToken(_hypercertMinter);
     }
@@ -72,6 +73,8 @@ contract Hyperfund is AccessControl, Pausable {
         uint256[] memory newallocations = new uint256[](2);
         newallocations[0] = hypercertMinter.unitsOf(hypercertId) - amount;
         newallocations[1] = amount;
-        hypercertMinter.splitFraction(account, hypercertId, newallocations);
+        address hypercertOwner = hypercertMinter.ownerOf(hypercertId);
+        hypercertMinter.splitFraction(hypercertOwner, hypercertId, newallocations);
+        hypercertMinter.safeTransferFrom(hypercertOwner, account, hypercertId + 1, 1, "");
     }
 }

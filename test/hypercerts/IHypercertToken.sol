@@ -22,7 +22,9 @@ interface IHypercertToken {
     event ClaimStored(uint256 indexed claimID, string uri, uint256 totalUnits);
 
     /// @dev Function called to store a claim referenced via `uri` with a maximum number of fractions `units`.
-    function mintClaim(address account, uint256 units, string memory uri, TransferRestrictions restrictions) external;
+    function mintClaim(address account, uint256 units, string memory uri, TransferRestrictions restrictions)
+        external
+        returns (uint256 claimID);
 
     /// @dev Function called to store a claim referenced via `uri` with a set of `fractions`.
     /// @dev Fractions are internally summed to total units.
@@ -32,7 +34,7 @@ interface IHypercertToken {
         uint256[] memory fractions,
         string memory uri,
         TransferRestrictions restrictions
-    ) external;
+    ) external returns (uint256 claimID);
 
     /// @dev Function called to split `tokenID` owned by `account` into units declared in `values`.
     /// @notice The sum of `values` must equal the current value of `_tokenID`.

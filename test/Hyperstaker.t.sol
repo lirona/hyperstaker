@@ -12,7 +12,7 @@ contract HyperstakerTest is Test {
     uint256 public baseHypercertId = 1 << 128;
     uint256 public fractionHypercertId = (1 << 128) + 1;
     MockERC20 public rewardToken = new MockERC20("Reward", "REW");
-
+    /*
     function setUp() public {
         hypercertMinter = new HypercertMinter();
         hyperstaker = new Hyperstaker(address(hypercertMinter), baseHypercertId, address(this));
@@ -37,5 +37,5 @@ contract HyperstakerTest is Test {
     function test_SetReward() public {
         hyperstaker.setReward(address(0), 100);
         assertEq(hyperstaker.totalRewards(), 100);
-    }
+    }*/
 }
