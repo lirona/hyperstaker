@@ -499,22 +499,14 @@ contract SemiFungible1155 is
     // The following functions are overrides required by Solidity.
     /**
      * @dev Called after a token transfer has been completed.
-     * @param operator The address of the operator performing the transfer.
-     * @param from The address of the sender of the tokens.
      * @param to The address of the recipient of the tokens.
      * @param ids An array of token IDs that were transferred.
-     * @param amounts An array of token amounts that were transferred.
-     * @param data Additional data that was passed along with the transfer.
      * @dev This function updates the `owners` mapping to reflect the new owner of each token that was transferred.
      */
-    function _afterTokenTransfer(
-        address operator,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal virtual {
+    function _afterTokenTransfer(address, address, address to, uint256[] memory ids, uint256[] memory, bytes memory)
+        internal
+        virtual
+    {
         //  super._afterTokenTransfer(operator, from, to, ids, amounts, data);
 
         uint256 len = ids.length;

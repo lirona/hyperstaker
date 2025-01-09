@@ -205,12 +205,12 @@ contract HypercertMinter is IHypercertToken, SemiFungible1155, AllowlistMinter, 
     }
 
     function _beforeTokenTransfer(
-        address operator,
+        address,
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        uint256[] memory,
+        bytes memory
     ) internal virtual {
         //   super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
 
