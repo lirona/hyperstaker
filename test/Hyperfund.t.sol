@@ -35,17 +35,6 @@ contract HyperfundTest is Test {
         assertEq(address(hyperfund.hypercertMinter()), address(hypercertMinter));
     }
 
-    function test_setHypercertId() public {
-        vm.prank(manager);
-        hyperfund.setHypercertId(baseHypercertId + 1);
-        assertEq(hyperfund.hypercertId(), baseHypercertId + 1);
-    }
-
-    function testFail_setHypercertId() public {
-        vm.prank(donor);
-        hyperfund.setHypercertId(baseHypercertId + 1);
-    }
-
     function test_setAllowedToken() public {
         vm.prank(manager);
         hyperfund.setAllowedToken(address(fundingToken), true);
@@ -130,7 +119,7 @@ contract HyperfundTest is Test {
         assertEq(hypercertMinter.ownerOf(fractionHypercertId), address(this));
     }
 
-    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data)
+    function onERC1155Received(address , address , uint256 , uint256 , bytes calldata )
         external
         pure
         returns (bytes4)

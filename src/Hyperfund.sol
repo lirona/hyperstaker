@@ -9,7 +9,7 @@ import {IHypercertToken} from "./interfaces/IHypercertToken.sol";
 
 contract Hyperfund is AccessControl, Pausable {
     IHypercertToken public hypercertMinter;
-    uint256 public hypercertId;
+    uint256 public immutable hypercertId;
 
     // erc20 token allowlist
     mapping(address => bool) public allowedTokens;
@@ -26,10 +26,6 @@ contract Hyperfund is AccessControl, Pausable {
         _grantRole(MANAGER_ROLE, _manager);
         hypercertId = _hypercertId;
         hypercertMinter = IHypercertToken(_hypercertMinter);
-    }
-
-    function setHypercertId(uint256 _hypercertId) external onlyRole(MANAGER_ROLE) {
-        hypercertId = _hypercertId;
     }
 
     function setAllowedToken(address _token, bool _allowed) external onlyRole(MANAGER_ROLE) {
