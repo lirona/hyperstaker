@@ -22,10 +22,10 @@ contract HyperfundFactory {
     function createHyperfund(address hypercertMinter, uint256 hypercertId, address manager) external {
         require(hypercertMinter != address(0), "Invalid hypercert minter");
         require(manager != address(0), "Invalid manager");
-        
+
         Hyperfund newHyperfund = new Hyperfund(hypercertMinter, hypercertId, manager);
         require(address(newHyperfund) != address(0), "Hyperfund deployment failed");
-        
+
         hyperfunds.push(newHyperfund);
         hyperfundsByManager[manager][hypercertId] = newHyperfund;
         emit HyperfundCreated(address(newHyperfund), manager, hypercertId);
@@ -35,10 +35,10 @@ contract HyperfundFactory {
     function createHyperstaker(address hypercertMinter, uint256 hypercertId, address manager) external {
         require(hypercertMinter != address(0), "Invalid hypercert minter");
         require(manager != address(0), "Invalid manager");
-        
+
         Hyperstaker newHyperstaker = new Hyperstaker(hypercertMinter, hypercertId, manager);
         require(address(newHyperstaker) != address(0), "Hyperstaker deployment failed");
-        
+
         hyperstakers.push(newHyperstaker);
         hyperstakersByManager[manager][hypercertId] = newHyperstaker;
         emit HyperstakerCreated(address(newHyperstaker), manager, hypercertId);
@@ -54,4 +54,3 @@ contract HyperfundFactory {
         return hyperstakers; // Return the array of Hyperstakers
     }
 }
-

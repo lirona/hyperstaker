@@ -22,90 +22,38 @@ contract HyperfundFactoryTest is Test {
         hyperfundFactory = new HyperfundFactory();
         manager = address(this);
         hypercertMinter = new HypercertMinter();
-        hypercertId = hypercertMinter.mintClaim(
-            address(this),
-            totalUnits,
-            "uri",
-            HT.TransferRestrictions.AllowAll
-        );
+        hypercertId = hypercertMinter.mintClaim(address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll);
     }
 
     function testCreateHyperfund() public {
-        hyperfundFactory.createHyperfund(
-            address(hypercertMinter),
-            hypercertId,
-            manager
-        );
+        hyperfundFactory.createHyperfund(address(hypercertMinter), hypercertId, manager);
 
-        Hyperfund createdHyperfund = hyperfundFactory.hyperfundsByManager(
-            manager,
-            hypercertId
-        );
-        assertTrue(
-            address(createdHyperfund) != address(0),
-            "Hyperfund should be created and mapped correctly"
-        );
+        Hyperfund createdHyperfund = hyperfundFactory.hyperfundsByManager(manager, hypercertId);
+        assertTrue(address(createdHyperfund) != address(0), "Hyperfund should be created and mapped correctly");
     }
 
     function testCreateHyperstaker() public {
-        hyperfundFactory.createHyperstaker(
-            address(hypercertMinter),
-            hypercertId,
-            manager
-        );
+        hyperfundFactory.createHyperstaker(address(hypercertMinter), hypercertId, manager);
 
-        Hyperstaker createdHyperstaker = hyperfundFactory.hyperstakersByManager(
-            manager,
-            hypercertId
-        );
-        assertTrue(
-            address(createdHyperstaker) != address(0),
-            "Hyperstaker should be created and mapped correctly"
-        );
+        Hyperstaker createdHyperstaker = hyperfundFactory.hyperstakersByManager(manager, hypercertId);
+        assertTrue(address(createdHyperstaker) != address(0), "Hyperstaker should be created and mapped correctly");
     }
 
     function testGetHyperfunds() public {
-        hyperfundFactory.createHyperfund(
-            address(hypercertMinter),
-            hypercertId,
-            manager
-        );
+        hyperfundFactory.createHyperfund(address(hypercertMinter), hypercertId, manager);
         Hyperfund[] memory hyperfunds = hyperfundFactory.getHyperfunds();
 
-        assertEq(
-            hyperfunds.length,
-            1,
-            "There should be one deployed Hyperfund"
-        );
+        assertEq(hyperfunds.length, 1, "There should be one deployed Hyperfund");
     }
 
     function testGetHyperstakers() public {
-        hyperfundFactory.createHyperstaker(
-            address(hypercertMinter),
-            hypercertId,
-            manager
-        );
+        hyperfundFactory.createHyperstaker(address(hypercertMinter), hypercertId, manager);
         Hyperstaker[] memory hyperstakers = hyperfundFactory.getHyperstakers();
 
-        assertEq(
-            hyperstakers.length,
-            1,
-            "There should be one deployed Hyperstaker"
-        );
+        assertEq(hyperstakers.length, 1, "There should be one deployed Hyperstaker");
     }
 
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external pure returns (bytes4) {
-        return
-            bytes4(
-                keccak256(
-                    "onERC1155Received(address,address,uint256,uint256,bytes)"
-                )
-            );
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 }
