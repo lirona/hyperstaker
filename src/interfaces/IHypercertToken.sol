@@ -7,4 +7,5 @@ interface IHypercertToken {
     function ownerOf(uint256 tokenID) external view returns (address owner);
     function transferFrom(address from, address to, uint256 tokenId, uint256 units) external;
     function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes memory data) external;
+    function burnFraction(address from, uint256 tokenId) external;
 }
