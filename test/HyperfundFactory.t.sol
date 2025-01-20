@@ -28,29 +28,15 @@ contract HyperfundFactoryTest is Test {
     function testCreateHyperfund() public {
         hyperfundFactory.createHyperfund(address(hypercertMinter), hypercertId, manager);
 
-        Hyperfund createdHyperfund = hyperfundFactory.hyperfundsByManager(manager, hypercertId);
-        assertTrue(address(createdHyperfund) != address(0), "Hyperfund should be created and mapped correctly");
+        address createdHyperfund = hyperfundFactory.hyperfunds(hypercertId);
+        assertTrue(createdHyperfund != address(0), "Hyperfund should be created and mapped correctly");
     }
 
     function testCreateHyperstaker() public {
         hyperfundFactory.createHyperstaker(address(hypercertMinter), hypercertId, manager);
 
-        Hyperstaker createdHyperstaker = hyperfundFactory.hyperstakersByManager(manager, hypercertId);
+        address createdHyperstaker = hyperfundFactory.hyperstakers(hypercertId);
         assertTrue(address(createdHyperstaker) != address(0), "Hyperstaker should be created and mapped correctly");
-    }
-
-    function testGetHyperfunds() public {
-        hyperfundFactory.createHyperfund(address(hypercertMinter), hypercertId, manager);
-        Hyperfund[] memory hyperfunds = hyperfundFactory.getHyperfunds();
-
-        assertEq(hyperfunds.length, 1, "There should be one deployed Hyperfund");
-    }
-
-    function testGetHyperstakers() public {
-        hyperfundFactory.createHyperstaker(address(hypercertMinter), hypercertId, manager);
-        Hyperstaker[] memory hyperstakers = hyperfundFactory.getHyperstakers();
-
-        assertEq(hyperstakers.length, 1, "There should be one deployed Hyperstaker");
     }
 
     function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
