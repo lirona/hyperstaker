@@ -52,30 +52,30 @@ contract HyperfundTest is Test {
     }
 
     function test_donate_ether() public {
-        _test_donate_ether_multiplier(1);
+        _test_donate_ether(1);
     }
 
     function test_donate_ether_multiplier_500() public {
-        _test_donate_ether_multiplier(500);
+        _test_donate_ether(500);
     }
 
     function test_donate_ether_multiplier_minus_500() public {
-        _test_donate_ether_multiplier(-500);
+        _test_donate_ether(-500);
     }
 
     function test_donate_token() public {
-        _test_donate_token_multiplier(1);
+        _test_donate_token(1);
     }
 
     function test_donate_token_multiplier_500() public {
-        _test_donate_token_multiplier(500);
+        _test_donate_token(500);
     }
 
     function test_donate_token_multiplier_minus_500() public {
-        _test_donate_token_multiplier(-500);
+        _test_donate_token(-500);
     }
 
-    function _test_donate_ether_multiplier(int256 multiplier) internal {
+    function _test_donate_ether(int256 multiplier) internal {
         vm.prank(manager);
         hyperfund.setTokenMultiplier(address(0), multiplier);
         vm.deal(contributor, amount);
@@ -84,7 +84,7 @@ contract HyperfundTest is Test {
         _assertDonation(multiplier, amount);
     }
 
-    function _test_donate_token_multiplier(int256 multiplier) internal {
+    function _test_donate_token(int256 multiplier) internal {
         vm.prank(manager);
         hyperfund.setTokenMultiplier(address(fundingToken), multiplier);
         fundingToken.mint(contributor, amount);
@@ -243,6 +243,41 @@ contract HyperfundTest is Test {
 
     function test_redeem_token_multiplier_minus_500() public {
         _test_redeem_token(-500, 10000);
+    }
+
+    function testFail_redeem_not_allowlisted() public {
+        vm.prank(manager);
+        hyperfund.setTokenMultiplier(address(fundingToken), 1);
+        fundingToken.mint(contributor, amount);
+
+        vm.startPrank(contributor);
+        fundingToken.approve(address(hyperfund), amount);
+        hyperfund.donate(address(fundingToken), amount);
+        hyperfund.redeem(fractionHypercertId + 1, address(fundingToken));
+        vm.stopPrank();
+    }
+
+    function testFail_redeem_over_allowance() public {
+        vm.startPrank(manager);
+        hyperfund.setTokenMultiplier(address(fundingToken), 1);
+        hyperfund.nonfinancialContribution(contributor, 10000);
+        vm.stopPrank();
+        fundingToken.mint(contributor, amount);
+
+        vm.startPrank(contributor);
+        fundingToken.approve(address(hyperfund), amount);
+        hyperfund.donate(address(fundingToken), amount);
+        hyperfund.redeem(fractionHypercertId + 1, address(fundingToken));
+        hyperfund.redeem(fractionHypercertId + 2, address(fundingToken));
+        vm.stopPrank();
+    }
+
+    function testFail_redeem_not_fraction() public {
+        uint256 baseHypercertId1 =
+            hypercertMinter.mintClaim(contributor, totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        uint256 fractionHypercertId1 = baseHypercertId1 + 1;
+        vm.prank(contributor);
+        hyperfund.redeem(fractionHypercertId1, address(fundingToken));
     }
 
     function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {

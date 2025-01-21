@@ -10,7 +10,10 @@ import {IHypercertToken} from "./interfaces/IHypercertToken.sol";
 contract Hyperfund is AccessControl, Pausable {
     IHypercertToken public hypercertMinter;
     uint256 public immutable hypercertId;
+    uint256 public immutable hypercertTypeId;
     uint256 public immutable hypercertUnits;
+
+    uint256 internal constant TYPE_MASK = type(uint256).max << 128;
 
     // erc20 token allowlist, 0 means the token is not allowed
     // negative multiplier means the total amount of hypercert units is smaller than the amount of tokens it represents and rounding is applied
@@ -27,6 +30,7 @@ contract Hyperfund is AccessControl, Pausable {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, _manager);
         hypercertId = _hypercertId;
+        hypercertTypeId = hypercertId & TYPE_MASK;
         hypercertMinter = IHypercertToken(_hypercertMinter);
         hypercertUnits = hypercertMinter.unitsOf(_hypercertId);
     }
@@ -85,12 +89,14 @@ contract Hyperfund is AccessControl, Pausable {
     }
 
     /// @notice redeem a hypercert fraction for the corresponding amount of tokens
-    /// NOTE: sender must first approve the hyperfund to transfer the hypercert fraction, by calling hypercertMinter.setApprovalForAll(address(this), true)
+    /// NOTE: sender must first approve the hyperfund to burn the hypercert fraction, by calling hypercertMinter.setApprovalForAll(address(this), true)
     /// @param _fractionId id of the hypercert fraction
     /// @param _token address of the token to redeem, must be allowlisted. address(0) for native token
     function redeem(uint256 _fractionId, address _token) external whenNotPaused {
         require(hypercertMinter.ownerOf(_fractionId) == msg.sender, "not owner");
-        uint256 tokenAmount = _unitsToTokenAmount(_token, hypercertMinter.unitsOf(_fractionId));
+        require(_isFraction(_fractionId), "not a fraction of this hypercert");
+        uint256 units = hypercertMinter.unitsOf(_fractionId);
+        uint256 tokenAmount = _unitsToTokenAmount(_token, units);
         if (_token == address(0)) {
             (bool success,) = payable(msg.sender).call{value: tokenAmount}("");
             require(success, "transfer failed");
@@ -98,6 +104,7 @@ contract Hyperfund is AccessControl, Pausable {
             require(IERC20(_token).transfer(msg.sender, tokenAmount), "transfer failed");
         }
         hypercertMinter.burnFraction(msg.sender, _fractionId); // sets the units of the fraction to 0
+        nonfinancialContributions[msg.sender] -= units; // will underflow if the sender is not allowlisted
     }
 
     function _mintFraction(address account, uint256 units) internal {
@@ -125,5 +132,9 @@ contract Hyperfund is AccessControl, Pausable {
         } else {
             amount = _units * uint256(-multiplier);
         }
+    }
+
+    function _isFraction(uint256 _fractionId) internal view returns (bool) {
+        return _fractionId & TYPE_MASK == hypercertTypeId;
     }
 }
