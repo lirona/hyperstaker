@@ -27,7 +27,7 @@ contract HyperfundFactory {
         require(newHyperfund != address(0), "Hyperfund deployment failed");
 
         hyperfunds[hypercertId] = newHyperfund;
-        emit HyperfundCreated(address(newHyperfund), manager, hypercertId);
+        emit HyperfundCreated(newHyperfund, manager, hypercertId);
         return newHyperfund;
     }
 

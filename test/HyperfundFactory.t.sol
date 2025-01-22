@@ -12,8 +12,9 @@ contract HyperfundFactoryTest is Test {
     HyperfundFactory hyperfundFactory;
     Hyperfund hyperfund;
     Hyperstaker hyperstaker;
+    
 
-    HypercertMinter public hypercertMinter;
+    address public hypercertMinter;
     uint256 hypercertId;
     address manager;
     uint256 public totalUnits = 100000000;
@@ -21,22 +22,52 @@ contract HyperfundFactoryTest is Test {
     function setUp() public {
         hyperfundFactory = new HyperfundFactory();
         manager = address(this);
-        hypercertMinter = new HypercertMinter();
-        hypercertId = hypercertMinter.mintClaim(address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll);
+        hypercertMinter = address(new HypercertMinter());
+        hypercertId = HypercertMinter(hypercertMinter).mintClaim(address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll);
     }
 
     function testCreateHyperfund() public {
-        hyperfundFactory.createHyperfund(address(hypercertMinter), hypercertId, manager);
+        hyperfundFactory.createHyperfund(hypercertMinter, hypercertId, manager);
 
         address createdHyperfund = hyperfundFactory.hyperfunds(hypercertId);
         assertTrue(createdHyperfund != address(0), "Hyperfund should be created and mapped correctly");
     }
 
     function testCreateHyperstaker() public {
-        hyperfundFactory.createHyperstaker(address(hypercertMinter), hypercertId, manager);
+        hyperfundFactory.createHyperstaker(hypercertMinter, hypercertId, manager);
 
         address createdHyperstaker = hyperfundFactory.hyperstakers(hypercertId);
         assertTrue(address(createdHyperstaker) != address(0), "Hyperstaker should be created and mapped correctly");
+    }
+
+    function testCreateHyperfundZeroMinter() public {
+        vm.expectRevert("Invalid hypercert minter");
+        hyperfundFactory.createHyperfund(address(0), hypercertId, manager);
+    }
+
+    function testCreateHyperfundZeroManager() public {
+        vm.expectRevert("Invalid manager");
+        hyperfundFactory.createHyperfund(hypercertMinter, hypercertId, address(0));
+    }
+
+    function testCreateHyperstakerZeroMinter() public {
+        vm.expectRevert("Invalid hypercert minter");
+        hyperfundFactory.createHyperstaker(address(0), hypercertId, manager);
+    }
+
+    function testCreateHyperstakerZeroManager() public {
+        vm.expectRevert("Invalid manager");
+        hyperfundFactory.createHyperstaker(hypercertMinter, hypercertId, address(0));
+    }
+
+    function testFailedHyperfundDeployment() public {
+        vm.expectRevert("Deployment failed");
+        hyperfundFactory.createHyperfund(address(0x0000000000000000000000000001), hypercertId, manager);
+    }
+
+    function testFailedHyperstakerDeployment() public {
+        vm.expectRevert("Deployment failed");
+        hyperfundFactory.createHyperstaker(address(0x0000000000000000000000000001), hypercertId, manager);
     }
 
     function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
