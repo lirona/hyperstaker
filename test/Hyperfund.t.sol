@@ -37,18 +37,13 @@ contract HyperfundTest is Test {
 
     function test_setAllowedToken() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), 10);
+        hyperfund.allowlistToken(address(fundingToken), 10);
         assertEq(hyperfund.tokenMultipliers(address(fundingToken)), 10);
-    }
-
-    function testFail_setAllowedToken() public {
-        vm.prank(contributor);
-        hyperfund.setTokenMultiplier(address(fundingToken), 10);
     }
 
     function testFail_setAllowedToken_not_manager() public {
         vm.prank(contributor);
-        hyperfund.setTokenMultiplier(address(fundingToken), 10);
+        hyperfund.allowlistToken(address(fundingToken), 10);
     }
 
     function test_donate_ether() public {
@@ -77,7 +72,7 @@ contract HyperfundTest is Test {
 
     function _test_donate_ether(int256 multiplier) internal {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(0), multiplier);
+        hyperfund.allowlistToken(address(0), multiplier);
         vm.deal(contributor, amount);
         vm.prank(contributor);
         hyperfund.donate{value: amount}(address(0), amount);
@@ -86,7 +81,7 @@ contract HyperfundTest is Test {
 
     function _test_donate_token(int256 multiplier) internal {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), multiplier);
+        hyperfund.allowlistToken(address(fundingToken), multiplier);
         fundingToken.mint(contributor, amount);
 
         vm.startPrank(contributor);
@@ -115,7 +110,7 @@ contract HyperfundTest is Test {
 
     function testFail_donate_ether_amount0() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(0), 1);
+        hyperfund.allowlistToken(address(0), 1);
         vm.deal(contributor, amount);
         vm.prank(contributor);
         hyperfund.donate{value: 0}(address(0), 0);
@@ -123,7 +118,7 @@ contract HyperfundTest is Test {
 
     function testFail_donate_token_amount0() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), 1);
+        hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, amount);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
@@ -133,7 +128,7 @@ contract HyperfundTest is Test {
 
     function testFail_donate_ether_not_allowlisted() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(0), 0);
+        hyperfund.allowlistToken(address(0), 0);
         vm.deal(contributor, amount);
         vm.prank(contributor);
         hyperfund.donate{value: amount}(address(0), amount);
@@ -141,7 +136,7 @@ contract HyperfundTest is Test {
 
     function testFail_donate_token_not_allowlisted() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), 0);
+        hyperfund.allowlistToken(address(fundingToken), 0);
         fundingToken.mint(contributor, amount);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
@@ -151,7 +146,7 @@ contract HyperfundTest is Test {
 
     function testFail_donate_token_amount_exceeds_supply() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), 1);
+        hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, totalUnits + 1);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), totalUnits + 1);
@@ -196,7 +191,7 @@ contract HyperfundTest is Test {
     function _test_redeem(int256 multiplier, uint256 units, address token) internal {
         vm.startPrank(manager);
         hyperfund.nonfinancialContribution(contributor, units);
-        hyperfund.setTokenMultiplier(token, multiplier);
+        hyperfund.allowlistToken(token, multiplier);
         vm.stopPrank();
         vm.startPrank(contributor);
         hypercertMinter.setApprovalForAll(address(hyperfund), true);
@@ -247,7 +242,7 @@ contract HyperfundTest is Test {
 
     function testFail_redeem_not_allowlisted() public {
         vm.prank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), 1);
+        hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, amount);
 
         vm.startPrank(contributor);
@@ -259,7 +254,7 @@ contract HyperfundTest is Test {
 
     function testFail_redeem_over_allowance() public {
         vm.startPrank(manager);
-        hyperfund.setTokenMultiplier(address(fundingToken), 1);
+        hyperfund.allowlistToken(address(fundingToken), 1);
         hyperfund.nonfinancialContribution(contributor, 10000);
         vm.stopPrank();
         fundingToken.mint(contributor, amount);

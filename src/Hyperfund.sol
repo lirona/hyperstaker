@@ -26,6 +26,14 @@ contract Hyperfund is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    error TokenNotAllowlisted();
+    error InvalidAmount();
+    error InvalidAddress();
+    error AmountExceedsAvailableSupply(uint256 availableSupply);
+    error TransferFailed();
+    error NotFractionOfThisHypercert(uint256 rightHypercertId);
+    error Unauthorized();
+
     constructor(address _hypercertMinter, uint256 _hypercertId, address _manager) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, _manager);
@@ -35,11 +43,11 @@ contract Hyperfund is AccessControl, Pausable {
         hypercertUnits = hypercertMinter.unitsOf(_hypercertId);
     }
 
-    /// @notice set the multiplier for a token, 0 means the token is not allowed
+    /// @notice set the multiplier for an allowlisted token, 0 means the token is not allowed
     /// @param _token address of the token
     /// @param _multiplier multiplier for the token, negative means the total amount of hypercert units is smaller
     /// than the amount of tokens it represents and rounding is applied
-    function setTokenMultiplier(address _token, int256 _multiplier) external onlyRole(MANAGER_ROLE) {
+    function allowlistToken(address _token, int256 _multiplier) external onlyRole(MANAGER_ROLE) {
         tokenMultipliers[_token] = _multiplier;
     }
 
@@ -63,15 +71,15 @@ contract Hyperfund is AccessControl, Pausable {
     /// @param _token address of the token to donate, must be allowlisted. address(0) for native token
     /// @param _amount amount of the token to donate
     function donate(address _token, uint256 _amount) external payable whenNotPaused {
-        require(tokenMultipliers[_token] != 0, "token not allowlisted");
-        require(_amount != 0, "invalid amount");
-        uint256 units;
-        units = _tokenAmountToUnits(_token, _amount);
-        require(hypercertMinter.unitsOf(hypercertId) >= units, "amount accedes available supply");
+        require(tokenMultipliers[_token] != 0, TokenNotAllowlisted());
+        require(_amount != 0, InvalidAmount());
+        uint256 units = _tokenAmountToUnits(_token, _amount);
+        uint256 availableSupply = hypercertMinter.unitsOf(hypercertId);
+        require(availableSupply >= units, AmountExceedsAvailableSupply(availableSupply));
         if (_token == address(0)) {
-            require(msg.value == _amount, "invalid amount");
+            require(msg.value == _amount, InvalidAmount());
         } else {
-            require(IERC20(_token).transferFrom(msg.sender, address(this), _amount), "transfer failed");
+            require(IERC20(_token).transferFrom(msg.sender, address(this), _amount), TransferFailed());
         }
         _mintFraction(msg.sender, units);
     }
@@ -81,9 +89,10 @@ contract Hyperfund is AccessControl, Pausable {
         whenNotPaused
         onlyRole(MANAGER_ROLE)
     {
-        require(_contributor != address(0), "invalid contributor");
-        require(_units != 0, "invalid units");
-        require(hypercertMinter.unitsOf(hypercertId) >= _units, "amount accedes available supply");
+        require(_contributor != address(0), InvalidAddress());
+        require(_units != 0, InvalidAmount());
+        uint256 availableSupply = hypercertMinter.unitsOf(hypercertId);
+        require(availableSupply >= _units, AmountExceedsAvailableSupply(availableSupply));
         nonfinancialContributions[_contributor] += _units;
         _mintFraction(_contributor, _units);
     }
@@ -93,15 +102,15 @@ contract Hyperfund is AccessControl, Pausable {
     /// @param _fractionId id of the hypercert fraction
     /// @param _token address of the token to redeem, must be allowlisted. address(0) for native token
     function redeem(uint256 _fractionId, address _token) external whenNotPaused {
-        require(hypercertMinter.ownerOf(_fractionId) == msg.sender, "not owner");
-        require(_isFraction(_fractionId), "not a fraction of this hypercert");
+        require(hypercertMinter.ownerOf(_fractionId) == msg.sender, Unauthorized());
+        require(_isFraction(_fractionId), NotFractionOfThisHypercert(hypercertId));
         uint256 units = hypercertMinter.unitsOf(_fractionId);
         uint256 tokenAmount = _unitsToTokenAmount(_token, units);
         if (_token == address(0)) {
             (bool success,) = payable(msg.sender).call{value: tokenAmount}("");
-            require(success, "transfer failed");
+            require(success, TransferFailed());
         } else {
-            require(IERC20(_token).transfer(msg.sender, tokenAmount), "transfer failed");
+            require(IERC20(_token).transfer(msg.sender, tokenAmount), TransferFailed());
         }
         hypercertMinter.burnFraction(msg.sender, _fractionId); // sets the units of the fraction to 0
         nonfinancialContributions[msg.sender] -= units; // will underflow if the sender is not allowlisted
