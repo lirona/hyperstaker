@@ -13,6 +13,8 @@ contract Hyperfund is AccessControl, Pausable {
     uint256 public immutable hypercertTypeId;
     uint256 public immutable hypercertUnits;
 
+    uint256 internal fractionCounter = 1;
+
     uint256 internal constant TYPE_MASK = type(uint256).max << 128;
 
     // erc20 token allowlist, 0 means the token is not allowed
@@ -122,7 +124,8 @@ contract Hyperfund is AccessControl, Pausable {
         newallocations[1] = units;
         address hypercertOwner = hypercertMinter.ownerOf(hypercertId);
         hypercertMinter.splitFraction(hypercertOwner, hypercertId, newallocations);
-        hypercertMinter.safeTransferFrom(hypercertOwner, account, hypercertId + 1, 1, "");
+        hypercertMinter.safeTransferFrom(hypercertOwner, account, hypercertId + fractionCounter, 1, "");
+        fractionCounter++;
     }
 
     function _tokenAmountToUnits(address _token, uint256 _amount) internal view returns (uint256 units) {

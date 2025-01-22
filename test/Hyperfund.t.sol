@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, stdError} from "forge-std/Test.sol";
 import {Hyperfund} from "../src/Hyperfund.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
 import {IHypercertToken} from "./hypercerts/IHypercertToken.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 contract HyperfundTest is Test {
     Hyperfund public hyperfund;
@@ -17,6 +18,7 @@ contract HyperfundTest is Test {
     address public contributor = vm.addr(2);
     uint256 public totalUnits = 100000000;
     uint256 public amount = 10000;
+    bytes32 public MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     function setUp() public {
         manager = address(this);
@@ -41,8 +43,11 @@ contract HyperfundTest is Test {
         assertEq(hyperfund.tokenMultipliers(address(fundingToken)), 10);
     }
 
-    function testFail_setAllowedToken_not_manager() public {
+    function test_RevertWhen_setAllowedToken_not_manager() public {
         vm.prank(contributor);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, contributor, MANAGER_ROLE)
+        );
         hyperfund.allowlistToken(address(fundingToken), 10);
     }
 
@@ -108,76 +113,87 @@ contract HyperfundTest is Test {
         assertEq(hypercertMinter.ownerOf(fractionHypercertId), address(this));
     }
 
-    function testFail_donate_ether_amount0() public {
+    function test_RevertWhen_donate_ether_amount0() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(0), 1);
         vm.deal(contributor, amount);
         vm.prank(contributor);
+        vm.expectRevert(Hyperfund.InvalidAmount.selector);
         hyperfund.donate{value: 0}(address(0), 0);
     }
 
-    function testFail_donate_token_amount0() public {
+    function test_RevertWhen_donate_token_amount0() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, amount);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
+        vm.expectRevert(Hyperfund.InvalidAmount.selector);
         hyperfund.donate(address(fundingToken), 0);
         vm.stopPrank();
     }
 
-    function testFail_donate_ether_not_allowlisted() public {
+    function test_RevertWhen_donate_ether_not_allowlisted() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(0), 0);
         vm.deal(contributor, amount);
         vm.prank(contributor);
+        vm.expectRevert(Hyperfund.TokenNotAllowlisted.selector);
         hyperfund.donate{value: amount}(address(0), amount);
     }
 
-    function testFail_donate_token_not_allowlisted() public {
+    function test_RevertWhen_donate_token_not_allowlisted() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 0);
         fundingToken.mint(contributor, amount);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
+        vm.expectRevert(Hyperfund.TokenNotAllowlisted.selector);
         hyperfund.donate(address(fundingToken), amount);
         vm.stopPrank();
     }
 
-    function testFail_donate_token_amount_exceeds_supply() public {
+    function test_RevertWhen_donate_token_amount_exceeds_supply() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, totalUnits + 1);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), totalUnits + 1);
+        vm.expectRevert(abi.encodeWithSelector(Hyperfund.AmountExceedsAvailableSupply.selector, totalUnits));
         hyperfund.donate(address(fundingToken), totalUnits + 1);
         vm.stopPrank();
     }
 
     function test_nonfinancialContribution() public {
         vm.prank(manager);
-        hyperfund.nonfinancialContribution(contributor, 10000);
-        _assertNewFraction(10000);
+        hyperfund.nonfinancialContribution(contributor, amount);
+        _assertNewFraction(amount);
     }
 
-    function testFail_nonfinancialContribution_amount0() public {
+    function test_RevertWhen_nonfinancialContribution_amount0() public {
         vm.prank(manager);
+        vm.expectRevert(Hyperfund.InvalidAmount.selector);
         hyperfund.nonfinancialContribution(contributor, 0);
     }
 
-    function testFail_nonfinancialContribution_amount_exceeds_supply() public {
+    function test_RevertWhen_nonfinancialContribution_amount_exceeds_supply() public {
         vm.prank(manager);
+        vm.expectRevert(abi.encodeWithSelector(Hyperfund.AmountExceedsAvailableSupply.selector, totalUnits));
         hyperfund.nonfinancialContribution(contributor, totalUnits + 1);
     }
 
-    function testFail_nonfinancialContribution_contributor_is_zero() public {
+    function test_RevertWhen_nonfinancialContribution_contributor_is_zero() public {
         vm.prank(manager);
-        hyperfund.nonfinancialContribution(address(0), 10000);
+        vm.expectRevert(Hyperfund.InvalidAddress.selector);
+        hyperfund.nonfinancialContribution(address(0), amount);
     }
 
-    function testFail_nonfinancialContribution_not_manager() public {
+    function test_RevertWhen_nonfinancialContribution_not_manager() public {
         vm.prank(contributor);
-        hyperfund.nonfinancialContribution(contributor, 10000);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, contributor, MANAGER_ROLE)
+        );
+        hyperfund.nonfinancialContribution(contributor, amount);
     }
 
     function _unitsToTokenAmount(int256 multiplier, uint256 units) internal pure returns (uint256 tokenAmount) {
@@ -217,30 +233,30 @@ contract HyperfundTest is Test {
     }
 
     function test_redeem_ether_multiplier_1() public {
-        _test_redeem_ether(1, 10000);
+        _test_redeem_ether(1, amount);
     }
 
     function test_redeem_ether_multiplier_500() public {
-        _test_redeem_ether(500, 10000);
+        _test_redeem_ether(500, amount);
     }
 
     function test_redeem_ether_multiplier_minus_500() public {
-        _test_redeem_ether(-500, 10000);
+        _test_redeem_ether(-500, amount);
     }
 
     function test_redeem_token_multiplier_1() public {
-        _test_redeem_token(1, 10000);
+        _test_redeem_token(1, amount);
     }
 
     function test_redeem_token_multiplier_500() public {
-        _test_redeem_token(500, 10000);
+        _test_redeem_token(500, amount);
     }
 
     function test_redeem_token_multiplier_minus_500() public {
-        _test_redeem_token(-500, 10000);
+        _test_redeem_token(-500, amount);
     }
 
-    function testFail_redeem_not_allowlisted() public {
+    function test_RevertWhen_redeem_user_not_allowlisted() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, amount);
@@ -248,31 +264,38 @@ contract HyperfundTest is Test {
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
         hyperfund.donate(address(fundingToken), amount);
+        hypercertMinter.setApprovalForAll(address(hyperfund), true);
+        vm.expectRevert(stdError.arithmeticError);
         hyperfund.redeem(fractionHypercertId + 1, address(fundingToken));
         vm.stopPrank();
     }
 
-    function testFail_redeem_over_allowance() public {
+    function test_RevertWhen_redeem_over_allowance() public {
         vm.startPrank(manager);
         hyperfund.allowlistToken(address(fundingToken), 1);
-        hyperfund.nonfinancialContribution(contributor, 10000);
+        hyperfund.nonfinancialContribution(contributor, amount);
         vm.stopPrank();
         fundingToken.mint(contributor, amount);
+        fundingToken.mint(address(hyperfund), amount);
 
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
         hyperfund.donate(address(fundingToken), amount);
+        hypercertMinter.setApprovalForAll(address(hyperfund), true);
         hyperfund.redeem(fractionHypercertId + 1, address(fundingToken));
+        vm.expectRevert(stdError.arithmeticError);
         hyperfund.redeem(fractionHypercertId + 2, address(fundingToken));
         vm.stopPrank();
     }
 
-    function testFail_redeem_not_fraction() public {
+    function test_RevertWhen_redeem_not_fraction() public {
+        vm.startPrank(contributor);
         uint256 baseHypercertId1 =
             hypercertMinter.mintClaim(contributor, totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
         uint256 fractionHypercertId1 = baseHypercertId1 + 1;
-        vm.prank(contributor);
+        vm.expectRevert(abi.encodeWithSelector(Hyperfund.NotFractionOfThisHypercert.selector, fractionHypercertId));
         hyperfund.redeem(fractionHypercertId1, address(fundingToken));
+        vm.stopPrank();
     }
 
     function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
