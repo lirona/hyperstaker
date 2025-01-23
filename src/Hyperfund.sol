@@ -71,7 +71,7 @@ contract Hyperfund is AccessControl, Pausable {
         if (_token == address(0)) {
             payable(_to).transfer(_amount);
         } else {
-            require(IERC20(_token).transfer(_to, _amount), "transfer failed");
+            require(IERC20(_token).transfer(_to, _amount), TransferFailed());
         }
         emit DonationsWithdrawn(_token, _amount, _to);
     }
