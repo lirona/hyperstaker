@@ -28,6 +28,14 @@ contract Hyperfund is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    // Events
+    event TokenAllowlisted(address token, int256 multiplier);
+    event DonationsWithdrawn(address token, uint256 amount, address to);
+    event DonationReceived(address token, uint256 amount);
+    event NonfinancialContribution(address contributor, uint256 units);
+    event FractionRedeemed(uint256 fractionId, address token, uint256 amount);
+
+    // Errors
     error TokenNotAllowlisted();
     error InvalidAmount();
     error InvalidAddress();
@@ -36,6 +44,11 @@ contract Hyperfund is AccessControl, Pausable {
     error NotFractionOfThisHypercert(uint256 rightHypercertId);
     error Unauthorized();
 
+    /// @notice NOTE: after creation, the hypercert owner must approve this contract to split and burn fractions
+    /// by calling hypercertMinter.setApprovalForAll(address(this), true)
+    /// @param _hypercertMinter The address of the HypercertMinter contract
+    /// @param _hypercertId The ID of the hypercert to be managed
+    /// @param _manager The address that will have the MANAGER_ROLE in the new Hyperfund, pausers can be added later
     constructor(address _hypercertMinter, uint256 _hypercertId, address _manager) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, _manager);
@@ -51,6 +64,7 @@ contract Hyperfund is AccessControl, Pausable {
     /// than the amount of tokens it represents and rounding is applied
     function allowlistToken(address _token, int256 _multiplier) external onlyRole(MANAGER_ROLE) {
         tokenMultipliers[_token] = _multiplier;
+        emit TokenAllowlisted(_token, _multiplier);
     }
 
     function withdrawDonations(address _token, uint256 _amount, address _to) external onlyRole(MANAGER_ROLE) {
@@ -59,6 +73,7 @@ contract Hyperfund is AccessControl, Pausable {
         } else {
             require(IERC20(_token).transfer(_to, _amount), "transfer failed");
         }
+        emit DonationsWithdrawn(_token, _amount, _to);
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
@@ -84,6 +99,7 @@ contract Hyperfund is AccessControl, Pausable {
             require(IERC20(_token).transferFrom(msg.sender, address(this), _amount), TransferFailed());
         }
         _mintFraction(msg.sender, units);
+        emit DonationReceived(_token, _amount);
     }
 
     function nonfinancialContribution(address _contributor, uint256 _units)
@@ -97,6 +113,7 @@ contract Hyperfund is AccessControl, Pausable {
         require(availableSupply >= _units, AmountExceedsAvailableSupply(availableSupply));
         nonfinancialContributions[_contributor] += _units;
         _mintFraction(_contributor, _units);
+        emit NonfinancialContribution(_contributor, _units);
     }
 
     /// @notice redeem a hypercert fraction for the corresponding amount of tokens
@@ -116,6 +133,7 @@ contract Hyperfund is AccessControl, Pausable {
         }
         hypercertMinter.burnFraction(msg.sender, _fractionId); // sets the units of the fraction to 0
         nonfinancialContributions[msg.sender] -= units; // will underflow if the sender is not allowlisted
+        emit FractionRedeemed(_fractionId, _token, tokenAmount);
     }
 
     function _mintFraction(address account, uint256 units) internal {
