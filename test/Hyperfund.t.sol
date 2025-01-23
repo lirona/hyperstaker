@@ -39,6 +39,8 @@ contract HyperfundTest is Test {
 
     function test_SetAllowedToken() public {
         vm.prank(manager);
+        vm.expectEmit(true, false, false, true);
+        emit Hyperfund.TokenAllowlisted(address(fundingToken), 10);
         hyperfund.allowlistToken(address(fundingToken), 10);
         assertEq(hyperfund.tokenMultipliers(address(fundingToken)), 10);
     }
@@ -80,6 +82,8 @@ contract HyperfundTest is Test {
         hyperfund.allowlistToken(address(0), multiplier);
         vm.deal(contributor, amount);
         vm.prank(contributor);
+        vm.expectEmit(true, false, false, true);
+        emit Hyperfund.DonationReceived(address(0), amount);
         hyperfund.donate{value: amount}(address(0), amount);
         _assertDonation(multiplier, amount);
     }
@@ -91,6 +95,8 @@ contract HyperfundTest is Test {
 
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
+        vm.expectEmit(true, false, false, true);
+        emit Hyperfund.DonationReceived(address(fundingToken), amount);
         hyperfund.donate(address(fundingToken), amount);
         vm.stopPrank();
         _assertDonation(multiplier, amount);
@@ -166,6 +172,8 @@ contract HyperfundTest is Test {
 
     function test_NonfinancialContribution() public {
         vm.prank(manager);
+        vm.expectEmit(true, false, false, true);
+        emit Hyperfund.NonfinancialContribution(contributor, amount);
         hyperfund.nonfinancialContribution(contributor, amount);
         _assertNewFraction(amount);
     }
@@ -211,6 +219,8 @@ contract HyperfundTest is Test {
         vm.stopPrank();
         vm.startPrank(contributor);
         hypercertMinter.setApprovalForAll(address(hyperfund), true);
+        vm.expectEmit(true, false, false, true);
+        emit Hyperfund.FractionRedeemed(fractionHypercertId + 1, token, _unitsToTokenAmount(multiplier, units));
         hyperfund.redeem(fractionHypercertId + 1, token);
         vm.stopPrank();
         assertEq(hypercertMinter.ownerOf(fractionHypercertId + 1), contributor);
