@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IHypercertToken} from "./interfaces/IHypercertToken.sol";
+import {HyperfundStorage} from "./HyperfundStorage.sol";
 
-contract Hyperfund is AccessControl, Pausable {
+contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+    // immutable values that are read from the HyperfundStorage
     IHypercertToken public hypercertMinter;
-    uint256 public immutable hypercertId;
-    uint256 public immutable hypercertTypeId;
-    uint256 public immutable hypercertUnits;
-
-    uint256 internal fractionCounter = 1;
-
-    uint256 internal constant TYPE_MASK = type(uint256).max << 128;
+    uint256 public hypercertId;
+    uint256 public hypercertTypeId;
+    uint256 public hypercertUnits;
 
     // erc20 token allowlist, 0 means the token is not allowed
     // negative multiplier means the total amount of hypercert units is smaller than the amount of tokens it represents and rounding is applied
@@ -24,9 +23,16 @@ contract Hyperfund is AccessControl, Pausable {
     // allowlist for non-financial contributions, 0 means the contributor is not allowed
     mapping(address contributor => uint256 units) public nonfinancialContributions;
 
-    //Roles
+    // keeps track of how many fractions have been split off the original hypercert
+    // WARNING: if fractions are split outside of the hyperfund it would result in the hyperfund failing
+    uint256 public fractionCounter;
+
+    uint256 internal constant TYPE_MASK = type(uint256).max << 128;
+
+    // Roles
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     // Events
     event TokenAllowlisted(address token, int256 multiplier);
@@ -44,19 +50,32 @@ contract Hyperfund is AccessControl, Pausable {
     error NotFractionOfThisHypercert(uint256 rightHypercertId);
     error Unauthorized();
 
-    /// @notice NOTE: after creation, the hypercert owner must approve this contract to split and burn fractions
-    /// by calling hypercertMinter.setApprovalForAll(address(this), true)
-    /// @param _hypercertMinter The address of the HypercertMinter contract
-    /// @param _hypercertId The ID of the hypercert to be managed
-    /// @param _manager The address that will have the MANAGER_ROLE in the new Hyperfund, pausers can be added later
-    constructor(address _hypercertMinter, uint256 _hypercertId, address _manager) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    /// @notice Initialize the contract, to be called by proxy
+    /// @notice NOTE: after deployment of proxy, the hypercert owner must approve the proxy contract to split and burn fractions
+    /// by calling hypercertMinter.setApprovalForAll(address(proxy), true)
+    /// @param _manager The address that will have the MANAGER_ROLE in the new Hyperfund, pausers and upgraders can be added later
+    /// @param _storage The immutable storage contract for this hyperfund
+    function initialize(address _storage, address _manager, uint256 _fractionCounter) public initializer {
+        __AccessControl_init();
+        __Pausable_init();
+        __UUPSUpgradeable_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, _manager);
-        hypercertId = _hypercertId;
-        hypercertTypeId = hypercertId & TYPE_MASK;
-        hypercertMinter = IHypercertToken(_hypercertMinter);
-        hypercertUnits = hypercertMinter.unitsOf(_hypercertId);
+
+        HyperfundStorage storage_ = HyperfundStorage(_storage);
+        hypercertMinter = IHypercertToken(storage_.hypercertMinter());
+        hypercertId = storage_.hypercertId();
+        hypercertTypeId = storage_.hypercertTypeId();
+        hypercertUnits = storage_.hypercertUnits();
+        fractionCounter = _fractionCounter;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /// @notice set the multiplier for an allowlisted token, 0 means the token is not allowed
     /// @param _token address of the token
