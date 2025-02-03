@@ -64,42 +64,42 @@ contract HyperfundTest is Test {
         hyperfund.allowlistToken(address(fundingToken), 10);
     }
 
-    function test_DonateEther() public {
-        _testDonateEther(1);
+    function test_FundEther() public {
+        _testFundEther(1);
     }
 
-    function test_DonateEtherMultiplier500() public {
-        _testDonateEther(500);
+    function test_FundEtherMultiplier500() public {
+        _testFundEther(500);
     }
 
-    function test_DonateEtherMultiplierMinus500() public {
-        _testDonateEther(-500);
+    function test_FundEtherMultiplierMinus500() public {
+        _testFundEther(-500);
     }
 
-    function test_DonateToken() public {
-        _testDonateToken(1);
+    function test_FundToken() public {
+        _testFundToken(1);
     }
 
-    function test_DonateTokenMultiplier500() public {
-        _testDonateToken(500);
+    function test_FundTokenMultiplier500() public {
+        _testFundToken(500);
     }
 
-    function test_DonateTokenMultiplierMinus500() public {
-        _testDonateToken(-500);
+    function test_FundTokenMultiplierMinus500() public {
+        _testFundToken(-500);
     }
 
-    function _testDonateEther(int256 multiplier) internal {
+    function _testFundEther(int256 multiplier) internal {
         vm.prank(manager);
         hyperfund.allowlistToken(address(0), multiplier);
         vm.deal(contributor, amount);
         vm.prank(contributor);
         vm.expectEmit(true, false, false, true);
-        emit Hyperfund.DonationReceived(address(0), amount);
-        hyperfund.donate{value: amount}(address(0), amount);
-        _assertDonation(multiplier, amount);
+        emit Hyperfund.Funded(address(0), amount);
+        hyperfund.fund{value: amount}(address(0), amount);
+        _assertFunding(multiplier, amount);
     }
 
-    function _testDonateToken(int256 multiplier) internal {
+    function _testFundToken(int256 multiplier) internal {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), multiplier);
         fundingToken.mint(contributor, amount);
@@ -107,13 +107,13 @@ contract HyperfundTest is Test {
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
         vm.expectEmit(true, false, false, true);
-        emit Hyperfund.DonationReceived(address(fundingToken), amount);
-        hyperfund.donate(address(fundingToken), amount);
+        emit Hyperfund.Funded(address(fundingToken), amount);
+        hyperfund.fund(address(fundingToken), amount);
         vm.stopPrank();
-        _assertDonation(multiplier, amount);
+        _assertFunding(multiplier, amount);
     }
 
-    function _assertDonation(int256 multiplier, uint256 _amount) internal view {
+    function _assertFunding(int256 multiplier, uint256 _amount) internal view {
         uint256 units;
         if (multiplier > 0) {
             units = _amount * uint256(multiplier);
@@ -130,54 +130,54 @@ contract HyperfundTest is Test {
         assertEq(hypercertMinter.ownerOf(fractionHypercertId), address(this));
     }
 
-    function test_RevertWhen_DonateEtherAmount0() public {
+    function test_RevertWhen_FundEtherAmount0() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(0), 1);
         vm.deal(contributor, amount);
         vm.prank(contributor);
         vm.expectRevert(Hyperfund.InvalidAmount.selector);
-        hyperfund.donate{value: 0}(address(0), 0);
+        hyperfund.fund{value: 0}(address(0), 0);
     }
 
-    function test_RevertWhen_DonateTokenAmount0() public {
+    function test_RevertWhen_FundTokenAmount0() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, amount);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
         vm.expectRevert(Hyperfund.InvalidAmount.selector);
-        hyperfund.donate(address(fundingToken), 0);
+        hyperfund.fund(address(fundingToken), 0);
         vm.stopPrank();
     }
 
-    function test_RevertWhen_DonateEtherNotAllowlisted() public {
+    function test_RevertWhen_FundEtherNotAllowlisted() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(0), 0);
         vm.deal(contributor, amount);
         vm.prank(contributor);
         vm.expectRevert(Hyperfund.TokenNotAllowlisted.selector);
-        hyperfund.donate{value: amount}(address(0), amount);
+        hyperfund.fund{value: amount}(address(0), amount);
     }
 
-    function test_RevertWhen_DonateTokenNotAllowlisted() public {
+    function test_RevertWhen_FundTokenNotAllowlisted() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 0);
         fundingToken.mint(contributor, amount);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
         vm.expectRevert(Hyperfund.TokenNotAllowlisted.selector);
-        hyperfund.donate(address(fundingToken), amount);
+        hyperfund.fund(address(fundingToken), amount);
         vm.stopPrank();
     }
 
-    function test_RevertWhen_DonateTokenAmountExceedsSupply() public {
+    function test_RevertWhen_FundTokenAmountExceedsSupply() public {
         vm.prank(manager);
         hyperfund.allowlistToken(address(fundingToken), 1);
         fundingToken.mint(contributor, totalUnits + 1);
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), totalUnits + 1);
         vm.expectRevert(abi.encodeWithSelector(Hyperfund.AmountExceedsAvailableSupply.selector, totalUnits));
-        hyperfund.donate(address(fundingToken), totalUnits + 1);
+        hyperfund.fund(address(fundingToken), totalUnits + 1);
         vm.stopPrank();
     }
 
@@ -284,7 +284,7 @@ contract HyperfundTest is Test {
 
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
-        hyperfund.donate(address(fundingToken), amount);
+        hyperfund.fund(address(fundingToken), amount);
         hypercertMinter.setApprovalForAll(address(hyperfund), true);
         vm.expectRevert(stdError.arithmeticError);
         hyperfund.redeem(fractionHypercertId + 1, address(fundingToken));
@@ -301,7 +301,7 @@ contract HyperfundTest is Test {
 
         vm.startPrank(contributor);
         fundingToken.approve(address(hyperfund), amount);
-        hyperfund.donate(address(fundingToken), amount);
+        hyperfund.fund(address(fundingToken), amount);
         hypercertMinter.setApprovalForAll(address(hyperfund), true);
         hyperfund.redeem(fractionHypercertId + 1, address(fundingToken));
         vm.expectRevert(stdError.arithmeticError);
