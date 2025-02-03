@@ -6,11 +6,16 @@ import {Hyperfund} from "../src/Hyperfund.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
 import {IHypercertToken} from "./hypercerts/IHypercertToken.sol";
+import {HyperfundStorage} from "../src/HyperfundStorage.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract HyperfundTest is Test {
     Hyperfund public hyperfund;
+    ERC1967Proxy public proxy;
+    Hyperfund public implementation;
     HypercertMinter public hypercertMinter;
+    HyperfundStorage public hyperfundStorage;
     MockERC20 public fundingToken;
     uint256 public baseHypercertId;
     uint256 public fractionHypercertId;
@@ -28,8 +33,14 @@ contract HyperfundTest is Test {
         fractionHypercertId = baseHypercertId + 1;
         assertEq(hypercertMinter.ownerOf(fractionHypercertId), address(this));
         fundingToken = new MockERC20("Funding", "FUND");
-        hyperfund = new Hyperfund(address(hypercertMinter), fractionHypercertId, manager);
-        hypercertMinter.setApprovalForAll(address(hyperfund), true);
+        hyperfundStorage = new HyperfundStorage(address(hypercertMinter), fractionHypercertId);
+        implementation = new Hyperfund();
+        bytes memory initData =
+            abi.encodeWithSelector(Hyperfund.initialize.selector, address(hyperfundStorage), manager, 1);
+
+        proxy = new ERC1967Proxy(address(implementation), initData);
+        hypercertMinter.setApprovalForAll(address(proxy), true);
+        hyperfund = Hyperfund(address(proxy));
     }
 
     function test_Constructor() public view {
