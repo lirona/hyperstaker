@@ -49,6 +49,7 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
     error TransferFailed();
     error NotFractionOfThisHypercert(uint256 rightHypercertId);
     error Unauthorized();
+    error ArrayLengthsMismatch();
 
     constructor() {
         _disableInitializers();
@@ -126,13 +127,26 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         whenNotPaused
         onlyRole(MANAGER_ROLE)
     {
-        require(_contributor != address(0), InvalidAddress());
-        require(_units != 0, InvalidAmount());
         uint256 availableSupply = hypercertMinter.unitsOf(hypercertId);
         require(availableSupply >= _units, AmountExceedsAvailableSupply(availableSupply));
-        nonfinancialContributions[_contributor] += _units;
-        _mintFraction(_contributor, _units);
-        emit NonfinancialContribution(_contributor, _units);
+        _nonfinancialContribution(_contributor, _units);
+    }
+
+    function nonFinancialContributions(address[] calldata _contributors, uint256[] calldata _units)
+        external
+        onlyRole(MANAGER_ROLE)
+    {
+        require(_contributors.length == _units.length, ArrayLengthsMismatch());
+        uint256 totalUnits = 0;
+        for (uint256 i = 0; i < _units.length; i++) {
+            totalUnits += _units[i];
+        }
+        uint256 availableSupply = hypercertMinter.unitsOf(hypercertId);
+        require(availableSupply >= totalUnits, AmountExceedsAvailableSupply(availableSupply));
+
+        for (uint256 i = 0; i < _contributors.length; i++) {
+            _nonfinancialContribution(_contributors[i], _units[i]);
+        }
     }
 
     /// @notice redeem a hypercert fraction for the corresponding amount of tokens
@@ -153,6 +167,14 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         hypercertMinter.burnFraction(msg.sender, _fractionId); // sets the units of the fraction to 0
         nonfinancialContributions[msg.sender] -= units; // will underflow if the sender is not allowlisted
         emit FractionRedeemed(_fractionId, _token, tokenAmount);
+    }
+
+    function _nonfinancialContribution(address _contributor, uint256 _units) internal {
+        require(_contributor != address(0), InvalidAddress());
+        require(_units != 0, InvalidAmount());
+        nonfinancialContributions[_contributor] += _units;
+        _mintFraction(_contributor, _units);
+        emit NonfinancialContribution(_contributor, _units);
     }
 
     function _mintFraction(address account, uint256 units) internal {
