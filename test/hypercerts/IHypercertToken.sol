@@ -22,9 +22,7 @@ interface IHypercertToken {
     event ClaimStored(uint256 indexed claimID, string uri, uint256 totalUnits);
 
     /// @dev Function called to store a claim referenced via `uri` with a maximum number of fractions `units`.
-    function mintClaim(address account, uint256 units, string memory uri, TransferRestrictions restrictions)
-        external
-        returns (uint256 claimID);
+    function mintClaim(address account, uint256 units, string memory uri, TransferRestrictions restrictions) external;
 
     /// @dev Function called to store a claim referenced via `uri` with a set of `fractions`.
     /// @dev Fractions are internally summed to total units.
@@ -61,4 +59,10 @@ interface IHypercertToken {
     /// @dev Returns the `uri` for metadata of the claim represented by `tokenID`
     /// @dev Metadata must conform to { Hypercert Metadata } spec (based on ERC1155 Metadata)
     function uri(uint256 tokenID) external view returns (string memory metadata);
+
+    function ownerOf(uint256 tokenID) external view returns (address owner);
+
+    function setApprovalForAll(address operator, bool approved) external;
+
+    function name() external view returns (string memory);
 }

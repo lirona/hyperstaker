@@ -4,11 +4,12 @@ pragma solidity ^0.8.28;
 import {Test, console} from "forge-std/Test.sol";
 import {Hyperstaker} from "../src/Hyperstaker.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
-import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
+import {IHypercertToken} from "./hypercerts/IHypercertToken.sol";
+import {HyperfundStorage} from "../src/HyperfundStorage.sol";
 
 contract HyperstakerTest is Test {
     Hyperstaker public hyperstaker;
-    HypercertMinter public hypercertMinter;
+    IHypercertToken public hypercertMinter;
     uint256 public baseHypercertId = 1 << 128;
     uint256 public fractionHypercertId = (1 << 128) + 1;
     MockERC20 public rewardToken = new MockERC20("Reward", "REW");
