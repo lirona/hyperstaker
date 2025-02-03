@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 import {Test, stdError} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {Hyperfund} from "../src/Hyperfund.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
-import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
-import {IHypercertToken} from "./hypercerts/IHypercertToken.sol";
+import {IHypercertToken} from "src/interfaces/IHypercertToken.sol";
 import {HyperfundStorage} from "../src/HyperfundStorage.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -14,7 +14,7 @@ contract HyperfundTest is Test {
     Hyperfund public hyperfund;
     ERC1967Proxy public proxy;
     Hyperfund public implementation;
-    HypercertMinter public hypercertMinter;
+    IHypercertToken public hypercertMinter;
     HyperfundStorage public hyperfundStorage;
     MockERC20 public fundingToken;
     uint256 public baseHypercertId;
@@ -28,10 +28,16 @@ contract HyperfundTest is Test {
     bytes32 public MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     function setUp() public {
-        manager = address(this);
-        hypercertMinter = new HypercertMinter();
-        baseHypercertId =
-            hypercertMinter.mintClaim(address(this), totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        vm.recordLogs();
+
+        // hypercertminter address in Sepolia
+        hypercertMinter = IHypercertToken(0xa16DFb32Eb140a6f3F2AC68f41dAd8c7e83C4941);
+        assertEq(keccak256(abi.encodePacked(hypercertMinter.name())), keccak256("HypercertMinter"));
+
+        hypercertMinter.mintClaim(address(this), totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        baseHypercertId = uint256(entries[0].topics[1]);
         fractionHypercertId = baseHypercertId + 1;
         assertEq(hypercertMinter.ownerOf(fractionHypercertId), address(this));
         fundingToken = new MockERC20("Funding", "FUND");
@@ -283,16 +289,17 @@ contract HyperfundTest is Test {
         emit Hyperfund.FractionRedeemed(fractionHypercertId + 1, token, _unitsToTokenAmount(multiplier, units));
         hyperfund.redeem(fractionHypercertId + 1, token);
         vm.stopPrank();
-        assertEq(hypercertMinter.ownerOf(fractionHypercertId + 1), contributor);
+        assertEq(hypercertMinter.ownerOf(fractionHypercertId + 1), address(0));
         assertEq(hypercertMinter.unitsOf(fractionHypercertId + 1), 0);
         assertEq(hypercertMinter.unitsOf(fractionHypercertId), totalUnits - units);
     }
 
     function _testRedeemEther(int256 multiplier, uint256 units) internal {
+        uint256 _initialContributorBalance = contributor.balance;
         uint256 ethAmount = _unitsToTokenAmount(multiplier, units);
         vm.deal(address(hyperfund), ethAmount);
         _testRedeem(multiplier, units, address(0));
-        assertEq(contributor.balance, ethAmount);
+        assertEq(contributor.balance - _initialContributorBalance, ethAmount);
     }
 
     function _testRedeemToken(int256 multiplier, uint256 units) internal {
@@ -360,8 +367,11 @@ contract HyperfundTest is Test {
 
     function test_RevertWhen_RedeemNotFraction() public {
         vm.startPrank(contributor);
-        uint256 baseHypercertId1 =
-            hypercertMinter.mintClaim(contributor, totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        vm.recordLogs();
+        hypercertMinter.mintClaim(contributor, totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        uint256 baseHypercertId1 = uint256(entries[0].topics[1]);
         uint256 fractionHypercertId1 = baseHypercertId1 + 1;
         vm.expectRevert(abi.encodeWithSelector(Hyperfund.NotFractionOfThisHypercert.selector, fractionHypercertId));
         hyperfund.redeem(fractionHypercertId1, address(fundingToken));
