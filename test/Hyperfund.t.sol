@@ -28,14 +28,13 @@ contract HyperfundTest is Test {
     bytes32 public MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     function setUp() public {
-        manager = address(this);
         vm.recordLogs();
 
         // hypercertminter address in Sepolia
         hypercertMinter = IHypercertToken(0xa16DFb32Eb140a6f3F2AC68f41dAd8c7e83C4941);
         assertEq(keccak256(abi.encodePacked(hypercertMinter.name())), keccak256("HypercertMinter"));
 
-        hypercertMinter.mintClaim(manager, totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        hypercertMinter.mintClaim(address(this), totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
         baseHypercertId = uint256(entries[0].topics[1]);
