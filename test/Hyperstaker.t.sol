@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {Test, console} from "forge-std/Test.sol";
 import {Hyperstaker} from "../src/Hyperstaker.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
-import {IHypercertToken} from "./hypercerts/IHypercertToken.sol";
+import {IHypercertToken} from "src/interfaces/IHypercertToken.sol";
 import {HyperfundStorage} from "../src/HyperfundStorage.sol";
 
 contract HyperstakerTest is Test {
