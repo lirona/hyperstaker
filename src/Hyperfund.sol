@@ -36,8 +36,8 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
 
     // Events
     event TokenAllowlisted(address token, int256 multiplier);
-    event DonationsWithdrawn(address token, uint256 amount, address to);
-    event DonationReceived(address token, uint256 amount);
+    event FundsWithdrawn(address token, uint256 amount, address to);
+    event Funded(address token, uint256 amount);
     event NonfinancialContribution(address contributor, uint256 units);
     event FractionRedeemed(uint256 fractionId, address token, uint256 amount);
 
@@ -86,13 +86,13 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         emit TokenAllowlisted(_token, _multiplier);
     }
 
-    function withdrawDonations(address _token, uint256 _amount, address _to) external onlyRole(MANAGER_ROLE) {
+    function withdrawFunds(address _token, uint256 _amount, address _to) external onlyRole(MANAGER_ROLE) {
         if (_token == address(0)) {
             payable(_to).transfer(_amount);
         } else {
             require(IERC20(_token).transfer(_to, _amount), TransferFailed());
         }
-        emit DonationsWithdrawn(_token, _amount, _to);
+        emit FundsWithdrawn(_token, _amount, _to);
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
@@ -103,10 +103,10 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         _unpause();
     }
 
-    /// @notice send a donation to the hyperfund and receive a hypercert fraction
-    /// @param _token address of the token to donate, must be allowlisted. address(0) for native token
-    /// @param _amount amount of the token to donate
-    function donate(address _token, uint256 _amount) external payable whenNotPaused {
+    /// @notice send funds to the hyperfund and receive a hypercert fraction
+    /// @param _token address of the token to send, must be allowlisted. address(0) for native token
+    /// @param _amount amount of the token to send
+    function fund(address _token, uint256 _amount) external payable whenNotPaused {
         require(tokenMultipliers[_token] != 0, TokenNotAllowlisted());
         require(_amount != 0, InvalidAmount());
         uint256 units = _tokenAmountToUnits(_token, _amount);
@@ -118,7 +118,7 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
             require(IERC20(_token).transferFrom(msg.sender, address(this), _amount), TransferFailed());
         }
         _mintFraction(msg.sender, units);
-        emit DonationReceived(_token, _amount);
+        emit Funded(_token, _amount);
     }
 
     function nonfinancialContribution(address _contributor, uint256 _units)
