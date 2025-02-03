@@ -21,8 +21,10 @@ contract HyperfundTest is Test {
     uint256 public fractionHypercertId;
     address public manager = vm.addr(1);
     address public contributor = vm.addr(2);
+    address public contributor2 = vm.addr(3);
     uint256 public totalUnits = 100000000;
     uint256 public amount = 10000;
+    uint256 public amount2 = 20000;
     bytes32 public MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     function setUp() public {
@@ -213,6 +215,53 @@ contract HyperfundTest is Test {
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, contributor, MANAGER_ROLE)
         );
         hyperfund.nonfinancialContribution(contributor, amount);
+    }
+
+    function test_NonFinancialContributions() public {
+        vm.prank(manager);
+        address[] memory contributors = new address[](2);
+        contributors[0] = contributor;
+        contributors[1] = contributor2;
+        uint256[] memory units = new uint256[](2);
+        units[0] = amount;
+        units[1] = amount2;
+        hyperfund.nonFinancialContributions(contributors, units);
+        assertEq(hypercertMinter.unitsOf(fractionHypercertId + 1), amount);
+        assertEq(hypercertMinter.unitsOf(fractionHypercertId + 2), amount2);
+        assertEq(hypercertMinter.ownerOf(fractionHypercertId + 1), contributor);
+        assertEq(hypercertMinter.ownerOf(fractionHypercertId + 2), contributor2);
+        assertEq(hypercertMinter.ownerOf(fractionHypercertId), address(this));
+    }
+
+    function test_RevertWhen_NonFinancialContributionsArrayLengthsMismatch() public {
+        vm.prank(manager);
+        address[] memory contributors = new address[](2);
+        contributors[0] = contributor;
+        contributors[1] = contributor2;
+        uint256[] memory units = new uint256[](1);
+        units[0] = amount;
+        vm.expectRevert(abi.encodeWithSelector(Hyperfund.ArrayLengthsMismatch.selector));
+        hyperfund.nonFinancialContributions(contributors, units);
+    }
+
+    function test_RevertWhen_NonfinancialContributionsAmountExceedsSupply() public {
+        vm.prank(manager);
+        address[] memory contributors = new address[](2);
+        contributors[0] = contributor;
+        contributors[1] = contributor2;
+        uint256[] memory units = new uint256[](2);
+        units[0] = amount;
+        units[1] = totalUnits;
+        vm.expectRevert(abi.encodeWithSelector(Hyperfund.AmountExceedsAvailableSupply.selector, totalUnits));
+        hyperfund.nonFinancialContributions(contributors, units);
+    }
+
+    function test_RevertWhen_NonFinancialContributionsNotManager() public {
+        vm.prank(contributor);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, contributor, MANAGER_ROLE)
+        );
+        hyperfund.nonFinancialContributions(new address[](0), new uint256[](0));
     }
 
     function _unitsToTokenAmount(int256 multiplier, uint256 units) internal pure returns (uint256 tokenAmount) {
