@@ -25,7 +25,6 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
 
     // keeps track of how many fractions have been split off the original hypercert
     // WARNING: if fractions are split outside of the hyperfund it would result in the hyperfund failing
-    // uint256 public fractionCounter;
 
     uint256 internal constant TYPE_MASK = type(uint256).max << 128;
 
@@ -73,7 +72,6 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         hypercertId = storage_.hypercertId();
         hypercertTypeId = storage_.hypercertTypeId();
         hypercertUnits = storage_.hypercertUnits();
-        // fractionCounter = _fractionCounter;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
@@ -183,8 +181,6 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         newallocations[1] = units;
         address hypercertOwner = hypercertMinter.ownerOf(hypercertId);
         hypercertMinter.splitFraction(account, hypercertId, newallocations);
-        // hypercertMinter.safeTransferFrom(hypercertOwner, account, hypercertId + fractionCounter, 1, "");
-        // fractionCounter++;
     }
 
     function _tokenAmountToUnits(address _token, uint256 _amount) internal view returns (uint256 units) {
