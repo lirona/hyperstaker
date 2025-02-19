@@ -2,10 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import "../src/HyperfundFactory.sol";
 import "../src/Hyperfund.sol";
 import "../src/Hyperstaker.sol";
-import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
+// import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
 import {IHypercertToken as HT} from "./hypercerts/IHypercertToken.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockHyperfundFactoryV2} from "./mocks/MockHyperfundFactoryV2.sol";
@@ -27,7 +28,11 @@ contract HyperfundFactoryTest is Test {
     function setUp() public {
         // Deploy implementation
         implementation = new HyperfundFactory();
-        hypercertMinter = address(new HypercertMinter());
+        
+        vm.recordLogs();
+
+        // hypercertminter address in Sepolia
+        hypercertMinter = 0xa16DFb32Eb140a6f3F2AC68f41dAd8c7e83C4941;
 
         // Deploy proxy
         bytes memory initData = abi.encodeWithSelector(HyperfundFactory.initialize.selector, hypercertMinter);
@@ -37,9 +42,14 @@ contract HyperfundFactoryTest is Test {
         hyperfundFactory = HyperfundFactory(address(proxy));
 
         manager = address(this);
-        hypercertId = HypercertMinter(hypercertMinter).mintClaim(
-            address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll
-        );
+        // hypercertId = HT(hypercertMinter).mintClaim(
+        //     address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll
+        // );
+
+        HT(hypercertMinter).mintClaim(address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        hypercertId = uint256(entries[0].topics[1]);
     }
 
     function test_InitialOwnership() public view {
@@ -92,7 +102,7 @@ contract HyperfundFactoryTest is Test {
         // with the other parameters we expect
         emit HyperfundFactory.HyperfundCreated(address(0), manager, hypercertId);
 
-        hyperfundFactory.createHyperfund(hypercertId, manager);
+        hyperfundFactory.createHyperfund(hypercertId + 1, manager);
 
         address createdHyperfund = hyperfundFactory.hyperfunds(hypercertId);
         assertTrue(createdHyperfund != address(0), "Hyperfund should be created and mapped correctly");
@@ -105,7 +115,7 @@ contract HyperfundFactoryTest is Test {
         // with the other parameters we expect
         emit HyperfundFactory.HyperstakerCreated(address(0), manager, hypercertId);
 
-        hyperfundFactory.createHyperstaker(hypercertId, manager);
+        hyperfundFactory.createHyperstaker(hypercertId + 1, manager);
 
         address createdHyperstaker = hyperfundFactory.hyperstakers(hypercertId);
         assertTrue(createdHyperstaker != address(0), "Hyperstaker should be created and mapped correctly");
