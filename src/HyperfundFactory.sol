@@ -11,7 +11,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 contract HyperfundFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     address hypercertMinter;
-    
+
     // Mapping to associate (hypercert ID) with Hyperfund and Hyperstaker addresses
     mapping(uint256 => bool) public hyperfunds;
     mapping(uint256 => bool) public hyperstakers;
@@ -37,20 +37,16 @@ contract HyperfundFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable 
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         hypercertMinter = _hypercertMinter;
-
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     // Function to create a new Hyperfund
-    function createHyperfund(uint256 hypercertId, address manager)
-        external
-        returns (address)
-    {
+    function createHyperfund(uint256 hypercertId, address manager) external returns (address) {
         require(manager != address(0), InvalidAddress());
         require(hyperfunds[hypercertId] == false, AlreadyDeployed());
         require(msg.sender == IHypercertToken(hypercertMinter).ownerOf(hypercertId + 1), NotOwnerOfHypercert());
-        
+
         HyperfundStorage hyperfundStorage = new HyperfundStorage(address(hypercertMinter), hypercertId + 1);
         Hyperfund implementation = new Hyperfund();
         bytes memory initData =
@@ -67,10 +63,7 @@ contract HyperfundFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable 
     }
 
     // Function to create a new Hyperstaker
-    function createHyperstaker(uint256 hypercertId, address manager)
-        external
-        returns (address)
-    {
+    function createHyperstaker(uint256 hypercertId, address manager) external returns (address) {
         require(manager != address(0), InvalidAddress());
         require(hyperstakers[hypercertId] == false, AlreadyDeployed());
         require(msg.sender == IHypercertToken(hypercertMinter).ownerOf(hypercertId + 1), NotOwnerOfHypercert());

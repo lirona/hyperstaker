@@ -44,7 +44,9 @@ contract HyperfundFactoryTest is Test {
         //     address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll
         // );
         vm.recordLogs();
-        IHypercertToken(hypercertMinter).mintClaim(address(this), totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
+        IHypercertToken(hypercertMinter).mintClaim(
+            address(this), totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll
+        );
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
         hypercertId = uint256(entries[0].topics[1]);
@@ -66,7 +68,7 @@ contract HyperfundFactoryTest is Test {
 
         // Deploy proxy
         bytes memory initData = abi.encodeWithSelector(HyperfundFactory.initialize.selector, address(0));
-        
+
         vm.expectRevert(HyperfundFactory.InvalidAddress.selector);
         new ERC1967Proxy(address(implementation), initData);
     }
