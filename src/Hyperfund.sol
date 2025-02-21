@@ -180,7 +180,6 @@ contract Hyperfund is AccessControlUpgradeable, PausableUpgradeable, UUPSUpgrade
         uint256[] memory newallocations = new uint256[](2);
         newallocations[0] = hypercertMinter.unitsOf(hypercertId) - units;
         newallocations[1] = units;
-        address hypercertOwner = hypercertMinter.ownerOf(hypercertId);
         hypercertMinter.splitFraction(account, hypercertId, newallocations);
     }
 
