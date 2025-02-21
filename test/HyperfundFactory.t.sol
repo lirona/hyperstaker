@@ -6,11 +6,11 @@ import {Vm} from "forge-std/Vm.sol";
 import "../src/HyperfundFactory.sol";
 import "../src/Hyperfund.sol";
 import "../src/Hyperstaker.sol";
-// import {HypercertMinter} from "./hypercerts/HypercertMinter.sol";
-import {IHypercertToken as HT} from "./hypercerts/IHypercertToken.sol";
+import {IHypercertToken} from "../src/interfaces/IHypercertToken.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockHyperfundFactoryV2} from "./mocks/MockHyperfundFactoryV2.sol";
 import {MockHyperminter} from "./mocks/MockHyperminter.sol";
+import {console} from "forge-std/console.sol";
 
 contract HyperfundFactoryTest is Test {
     HyperfundFactory implementation;
@@ -28,8 +28,6 @@ contract HyperfundFactoryTest is Test {
     function setUp() public {
         // Deploy implementation
         implementation = new HyperfundFactory();
-        
-        vm.recordLogs();
 
         // hypercertminter address in Sepolia
         hypercertMinter = 0xa16DFb32Eb140a6f3F2AC68f41dAd8c7e83C4941;
@@ -45,11 +43,12 @@ contract HyperfundFactoryTest is Test {
         // hypercertId = HT(hypercertMinter).mintClaim(
         //     address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll
         // );
-
-        HT(hypercertMinter).mintClaim(address(this), totalUnits, "uri", HT.TransferRestrictions.AllowAll);
+        vm.recordLogs();
+        IHypercertToken(hypercertMinter).mintClaim(address(this), totalUnits, "uri", IHypercertToken.TransferRestrictions.AllowAll);
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
         hypercertId = uint256(entries[0].topics[1]);
+        console.log(hypercertId);
     }
 
     function test_InitialOwnership() public view {
@@ -102,10 +101,10 @@ contract HyperfundFactoryTest is Test {
         // with the other parameters we expect
         emit HyperfundFactory.HyperfundCreated(address(0), manager, hypercertId);
 
-        hyperfundFactory.createHyperfund(hypercertId + 1, manager);
+        hyperfundFactory.createHyperfund(hypercertId, manager);
 
-        address createdHyperfund = hyperfundFactory.hyperfunds(hypercertId);
-        assertTrue(createdHyperfund != address(0), "Hyperfund should be created and mapped correctly");
+        bool createdHyperfund = hyperfundFactory.hyperfunds(hypercertId);
+        assertTrue(createdHyperfund != false, "Hyperfund should be created and mapped correctly");
     }
 
     function test_CreateHyperstaker() public {
@@ -115,10 +114,10 @@ contract HyperfundFactoryTest is Test {
         // with the other parameters we expect
         emit HyperfundFactory.HyperstakerCreated(address(0), manager, hypercertId);
 
-        hyperfundFactory.createHyperstaker(hypercertId + 1, manager);
+        hyperfundFactory.createHyperstaker(hypercertId, manager);
 
-        address createdHyperstaker = hyperfundFactory.hyperstakers(hypercertId);
-        assertTrue(createdHyperstaker != address(0), "Hyperstaker should be created and mapped correctly");
+        bool createdHyperstaker = hyperfundFactory.hyperstakers(hypercertId);
+        assertTrue(createdHyperstaker != false, "Hyperstaker should be created and mapped correctly");
     }
 
     function test_RevertWhen_RedeployingHyperfundWithSameHypercertId() public {
